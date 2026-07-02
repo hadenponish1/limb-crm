@@ -22,6 +22,9 @@ export const FREQUENCIES = [
   { id: 'monthly', label: 'Monthly', perMonth: 1, stepDays: null },
 ]
 
+// Where a client/lead came from
+export const SOURCES = ['TaskRabbit', 'Referral', 'Repeat client', 'Website', 'Direct', 'Other']
+
 export function isoLocal(d) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
@@ -70,15 +73,18 @@ function hj(clientId, serviceId, title, date, duration, amount, type = 'recurrin
 }
 function dstr(offsetDays) { const d = new Date(); d.setDate(d.getDate() + offsetDays); return isoLocal(d) }
 
+// Give seed clients a demo source so the badge/filter is visible in local mode
+seed.clients.forEach((c, i) => { if (!c.source) c.source = ['TaskRabbit', 'Referral', 'Direct'][i % 3] })
+
 function loadLocal() {
   try { const raw = localStorage.getItem(KEY); if (raw) return JSON.parse(raw) } catch (e) { /* ignore */ }
   return seed
 }
 
 // ---- Row <-> app mapping (cloud mode) ----
-const rowToClient = (r) => ({ id: r.id, name: r.name, contact: r.contact, email: r.email, phone: r.phone, address: r.address, lat: r.lat, lng: r.lng, status: r.status, services: r.services || [], notes: r.notes || [], createdAt: (r.created_at || '').slice(0, 10) })
+const rowToClient = (r) => ({ id: r.id, name: r.name, contact: r.contact, email: r.email, phone: r.phone, address: r.address, lat: r.lat, lng: r.lng, status: r.status, source: r.source || '', services: r.services || [], notes: r.notes || [], createdAt: (r.created_at || '').slice(0, 10) })
 const rowToJob = (r) => ({ id: r.id, clientId: r.client_id, serviceId: r.service_id, title: r.title, date: r.date, time: r.time, duration: r.duration, amount: Number(r.amount) || 0, type: r.type, recurring: r.recurring })
-const clientToRow = (c) => ({ id: c.id, name: c.name, contact: c.contact, email: c.email, phone: c.phone, address: c.address, lat: c.lat, lng: c.lng, status: c.status, services: c.services || [], notes: c.notes || [] })
+const clientToRow = (c) => ({ id: c.id, name: c.name, contact: c.contact, email: c.email, phone: c.phone, address: c.address, lat: c.lat, lng: c.lng, status: c.status, source: c.source || null, services: c.services || [], notes: c.notes || [] })
 const jobToRow = (j) => ({ id: j.id, client_id: j.clientId, service_id: j.serviceId, title: j.title, date: j.date, time: j.time, duration: j.duration, amount: j.amount, type: j.type, recurring: !!j.recurring })
 
 // ---- Shared in-memory store (source of truth for the UI in both modes) ----
@@ -106,6 +112,7 @@ const cloud = {
     notify()
   },
   insertClient: (c) => supabase.from('clients').insert(clientToRow(c)).then(({ error }) => error && console.error(error)),
+  insertClients: (cs) => supabase.from('clients').insert(cs.map(clientToRow)).then(({ error }) => error && console.error(error)),
   updateClient: (c) => supabase.from('clients').update(clientToRow(c)).eq('id', c.id).then(({ error }) => error && console.error(error)),
   deleteClients: (ids) => supabase.from('clients').delete().in('id', ids).then(({ error }) => error && console.error(error)),
   insertJobs: (jobs) => supabase.from('jobs').insert(jobs.map(jobToRow)).then(({ error }) => error && console.error(error)),
@@ -245,11 +252,17 @@ export function useStore() {
     return created.length
   }, [])
 
+  const bulkImport = useCallback(({ clients: nc = [], jobs: nj = [] }) => {
+    state = { ...state, clients: [...nc, ...state.clients], jobs: [...nj, ...state.jobs] }
+    commit()
+    if (isCloud) { if (nc.length) cloud.insertClients(nc); if (nj.length) cloud.insertJobs(nj) }
+  }, [])
+
   const reset = useCallback(() => { if (!isCloud) { state = seed; commit() } }, [])
 
   return {
     ...state, loading, cloud: isCloud,
     addClient, updateClient, deleteClient, deleteClients, addNote, deleteNote, upsertService,
-    addJob, deleteJob, generateSeries, previewRecurring, generateRecurring, reset,
+    addJob, deleteJob, generateSeries, previewRecurring, generateRecurring, bulkImport, reset,
   }
 }

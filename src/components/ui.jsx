@@ -31,6 +31,12 @@ export function StageBadge({ stage }) {
     : <span className="badge lead">Quoted</span>
 }
 
+export function SourceBadge({ source }) {
+  if (!source) return null
+  const tr = /task/i.test(source)
+  return <span className="badge src" style={tr ? { background: '#e7edf6', color: '#3a5f8a' } : undefined}>{source}</span>
+}
+
 export function Avatar({ name, service }) {
   return (
     <div className="avatar" style={{ background: colorFor(service || name) }}>

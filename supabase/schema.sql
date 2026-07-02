@@ -13,6 +13,7 @@ create table if not exists clients (
   lat double precision,
   lng double precision,
   status text not null default 'lead',
+  source text,
   services jsonb not null default '[]'::jsonb,
   notes jsonb not null default '[]'::jsonb,
   created_at timestamptz not null default now()

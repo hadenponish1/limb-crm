@@ -155,6 +155,7 @@ input, select, textarea { font-family: inherit; font-size: 14px; }
 .badge.lead { background: #e8eef3; color: #3d5a7a; }
 .badge.active { background: #e6efe0; color: #3f6b3d; }
 .badge.dot::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.badge.src { background: #ece7f3; color: #6b5b8a; font-weight: 600; }
 
 /* ---------- Forms / modal ---------- */
 .overlay {

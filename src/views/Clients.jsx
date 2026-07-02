@@ -1,24 +1,30 @@
 import { useState } from 'react'
 import { Icon } from '../components/icons'
-import { StatusBadge, Avatar } from '../components/ui'
+import { StatusBadge, Avatar, SourceBadge } from '../components/ui'
 import ClientDrawer from '../components/ClientDrawer'
+import ImportModal from '../components/ImportModal'
 import { money } from '../lib/format'
 import { recurringLines, projectLines, clientMRR, clientWonProjects, clientKind } from '../lib/metrics'
 
 const KIND_LABEL = { recurring: 'Recurring', project: 'Project', mixed: 'Recurring + Project', none: '—' }
 const KIND_CLASS = { recurring: 'recurring', project: 'project', mixed: 'recurring', none: 'lead' }
 
-export default function Clients({ clients, updateClient, deleteClient, deleteClients, addNote, deleteNote, onNew, jobs, addJob, deleteJob, generateSeries, upsertService }) {
+export default function Clients({ clients, updateClient, deleteClient, deleteClients, addNote, deleteNote, onNew, jobs, addJob, deleteJob, generateSeries, upsertService, bulkImport }) {
   const [filter, setFilter] = useState('all')
   const [q, setQ] = useState('')
+  const [sourceFilter, setSourceFilter] = useState('all')
   const [selectedId, setSelectedId] = useState(null)
   const [checked, setChecked] = useState(() => new Set())
+  const [showImport, setShowImport] = useState(false)
+
+  const sources = [...new Set(clients.map((c) => c.source).filter(Boolean))].sort()
 
   const filtered = clients.filter((c) => {
     if (filter === 'recurring' && recurringLines(c).length === 0) return false
     if (filter === 'project' && projectLines(c).length === 0) return false
     if (filter === 'leads' && c.status !== 'lead') return false
-    const hay = `${c.name} ${c.contact} ${c.address} ${(c.services || []).map((s) => s.service).join(' ')}`.toLowerCase()
+    if (sourceFilter !== 'all' && (c.source || '') !== sourceFilter) return false
+    const hay = `${c.name} ${c.contact} ${c.address} ${c.source || ''} ${(c.services || []).map((s) => s.service).join(' ')}`.toLowerCase()
     if (q && !hay.includes(q.toLowerCase())) return false
     return true
   })
@@ -52,6 +58,14 @@ export default function Clients({ clients, updateClient, deleteClient, deleteCli
             <button key={k} className={filter === k ? 'on' : ''} onClick={() => setFilter(k)} style={{ textTransform: 'capitalize', padding: '9px 14px' }}>{k}</button>
           ))}
         </div>
+        {sources.length > 0 && (
+          <select value={sourceFilter} onChange={(e) => setSourceFilter(e.target.value)}
+            style={{ padding: '9px 12px', border: '1px solid var(--line)', borderRadius: 10, background: '#fff', color: 'var(--moss)', fontWeight: 600 }}>
+            <option value="all">All sources</option>
+            {sources.map((s) => <option key={s} value={s}>{s}</option>)}
+          </select>
+        )}
+        <button className="btn btn-ghost" onClick={() => setShowImport(true)}><Icon.download /> Import</button>
         <button className="btn btn-primary" onClick={onNew}><Icon.plus /> New lead</button>
       </div>
 
@@ -91,7 +105,10 @@ export default function Clients({ clients, updateClient, deleteClient, deleteCli
                     <td>
                       <div className="cell-name">
                         <Avatar name={c.name} service={svcs[0]?.service} />
-                        <div><b>{c.name}</b><small>{c.contact} · {c.phone}</small></div>
+                        <div>
+                          <b>{c.name}</b> <SourceBadge source={c.source} />
+                          <small>{[c.contact, c.phone].filter(Boolean).join(' · ')}</small>
+                        </div>
                       </div>
                     </td>
                     <td>
@@ -124,6 +141,11 @@ export default function Clients({ clients, updateClient, deleteClient, deleteCli
         <ClientDrawer client={selected} onClose={() => setSelectedId(null)}
           updateClient={updateClient} deleteClient={deleteClient} addNote={addNote} deleteNote={deleteNote}
           jobs={jobs} addJob={addJob} deleteJob={deleteJob} generateSeries={generateSeries} upsertService={upsertService} />
+      )}
+
+      {showImport && (
+        <ImportModal existingClients={clients} onClose={() => setShowImport(false)}
+          onImport={({ clients: nc, jobs: nj }) => bulkImport({ clients: nc, jobs: nj })} />
       )}
     </div>
   )

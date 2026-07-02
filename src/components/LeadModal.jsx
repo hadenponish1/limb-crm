@@ -1,13 +1,13 @@
 import { useState } from 'react'
 import { Icon } from './icons'
-import { blankService } from '../lib/store'
+import { blankService, SOURCES } from '../lib/store'
 import ServiceLineFields from './ServiceLineFields'
 import AddressAutocomplete from './AddressAutocomplete'
 import { geocode } from '../lib/geocode'
 
 export default function LeadModal({ onClose, onSave }) {
   const [f, setF] = useState({
-    name: '', contact: '', email: '', phone: '', address: '', status: 'lead',
+    name: '', contact: '', email: '', phone: '', address: '', status: 'lead', source: 'Direct',
   })
   const [picked, setPicked] = useState(null) // coords from a chosen autocomplete suggestion
   const [line, setLine] = useState(blankService({ amount: '' }))
@@ -65,12 +65,18 @@ export default function LeadModal({ onClose, onSave }) {
             />
             <div className="page-sub" style={{ marginTop: 6, fontSize: 12 }}>Start typing and pick from the list — drops a pin on the map automatically.</div>
           </div>
-          <div className="field">
-            <label>Account stage</label>
-            <select value={f.status} onChange={set('status')}>
-              <option value="lead">Lead</option>
-              <option value="active">Active client</option>
-            </select>
+          <div className="field-row">
+            <div className="field">
+              <label>Account stage</label>
+              <select value={f.status} onChange={set('status')}>
+                <option value="lead">Lead</option>
+                <option value="active">Active client</option>
+              </select>
+            </div>
+            <div className="field">
+              <label>Source</label>
+              <select value={f.source} onChange={set('source')}>{SOURCES.map((s) => <option key={s}>{s}</option>)}</select>
+            </div>
           </div>
 
           <div className="section-label" style={{ marginTop: 20 }}>First service</div>

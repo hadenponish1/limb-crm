@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Icon } from './icons'
 import { Avatar, StatusBadge, TypeBadge, StageBadge } from './ui'
-import { blankService, FREQUENCIES, isoLocal } from '../lib/store'
+import { blankService, FREQUENCIES, isoLocal, SOURCES } from '../lib/store'
 import ServiceLineFields from './ServiceLineFields'
 import JobModal from './JobModal'
 import { geocode } from '../lib/geocode'
@@ -93,8 +93,13 @@ export default function ClientDrawer({ client, onClose, updateClient, deleteClie
           </div>
           <div className="field"><label>Email</label><input value={f.email || ''} onChange={set('email')} /></div>
           <div className="field"><label>Address</label><input value={f.address || ''} onChange={set('address')} /></div>
-          <div className="field"><label>Account stage</label>
-            <select value={f.status} onChange={set('status')}><option value="lead">Lead</option><option value="active">Active client</option></select>
+          <div className="field-row">
+            <div className="field"><label>Account stage</label>
+              <select value={f.status} onChange={set('status')}><option value="lead">Lead</option><option value="active">Active client</option></select>
+            </div>
+            <div className="field"><label>Source</label>
+              <select value={f.source || 'Other'} onChange={set('source')}>{SOURCES.map((s) => <option key={s}>{s}</option>)}</select>
+            </div>
           </div>
 
           <div className="section-label" style={{ marginTop: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
