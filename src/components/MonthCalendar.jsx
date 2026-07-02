@@ -7,8 +7,8 @@ const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x }
 const pillColor = (job) => (job.type === 'project' ? '#c99a4b' : '#6B7F65')
 
-export default function MonthCalendar({ jobs, byId, onDayClick, onJobClick }) {
-  const [mode, setMode] = useState('month') // month | week
+export default function MonthCalendar({ jobs, byId, onDayClick, onJobClick, initialMode = 'month', lockMode = false, compact = false }) {
+  const [mode, setMode] = useState(initialMode) // month | week
   const [cursor, setCursor] = useState(() => new Date())
   const todayIso = isoLocal(new Date())
 
@@ -55,10 +55,12 @@ export default function MonthCalendar({ jobs, byId, onDayClick, onJobClick }) {
           <button className="btn btn-ghost btn-sm" onClick={goToday}>Today</button>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          <div className="seg" style={{ background: 'var(--cream)', borderRadius: 9, padding: 3 }}>
-            <button className={mode === 'week' ? 'on' : ''} onClick={() => setMode('week')} style={{ border: 'none', padding: '6px 13px' }}>Week</button>
-            <button className={mode === 'month' ? 'on' : ''} onClick={() => setMode('month')} style={{ border: 'none', padding: '6px 13px' }}>Month</button>
-          </div>
+          {!lockMode && (
+            <div className="seg" style={{ background: 'var(--cream)', borderRadius: 9, padding: 3 }}>
+              <button className={mode === 'week' ? 'on' : ''} onClick={() => setMode('week')} style={{ border: 'none', padding: '6px 13px' }}>Week</button>
+              <button className={mode === 'month' ? 'on' : ''} onClick={() => setMode('month')} style={{ border: 'none', padding: '6px 13px' }}>Month</button>
+            </div>
+          )}
           <span className="money" style={{ color: 'var(--green)' }}>{money(rangeTotal)} scheduled</span>
         </div>
       </div>
@@ -95,7 +97,7 @@ export default function MonthCalendar({ jobs, byId, onDayClick, onJobClick }) {
             const list = byDate[iso] || []
             const isToday = iso === todayIso
             return (
-              <div key={i} className={`week-col${isToday ? ' today' : ''}`}>
+              <div key={i} className={`week-col${isToday ? ' today' : ''}${compact ? ' compact' : ''}`}>
                 <button className="week-head" onClick={() => onDayClick(iso)}>
                   <span className="week-dow">{WEEKDAYS[d.getDay()]}</span>
                   <span className={`week-num${isToday ? ' on' : ''}`}>{d.getDate()}</span>
@@ -120,7 +122,7 @@ export default function MonthCalendar({ jobs, byId, onDayClick, onJobClick }) {
       <div className="legend" style={{ marginTop: 16 }}>
         <span><i style={{ background: '#6B7F65' }} />Recurring visit</span>
         <span><i style={{ background: '#c99a4b' }} />One-off / project</span>
-        <span style={{ marginLeft: 'auto', color: 'var(--muted)' }}>Click a day to add a job · click a job to view</span>
+        <span style={{ marginLeft: 'auto', color: 'var(--muted)' }}>Click a day to see its jobs · click a job to view</span>
       </div>
     </div>
   )

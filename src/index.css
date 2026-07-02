@@ -263,6 +263,7 @@ input, select, textarea { font-family: inherit; font-size: 14px; }
 .week-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
 .week-col { display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; min-height: 420px; }
 .week-col.today { border-color: var(--green); box-shadow: 0 0 0 1px var(--green); }
+.week-col.compact { min-height: 250px; }
 .week-head { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 9px 4px; background: var(--paper); border-bottom: 1px solid var(--line); }
 .week-head:hover { background: var(--cream); }
 .week-dow { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
@@ -325,6 +326,10 @@ input, select, textarea { font-family: inherit; font-size: 14px; }
 .mini-date { width: 40px; flex-shrink: 0; text-align: center; background: var(--cream); border-radius: 8px; padding: 5px 0; line-height: 1; }
 .mini-date .d { font-family: var(--font-serif); font-size: 16px; font-weight: 600; color: var(--moss); }
 .mini-date .m { font-size: 9px; text-transform: uppercase; color: var(--muted); margin-top: 2px; letter-spacing: .04em; }
+.mini-job.done { background: #f6f5f0; border-color: #edeae0; }
+.mini-job.done .mini-date { background: #efece4; }
+.mini-job.done .mini-date .d, .mini-job.done > div b, .mini-job.done > div { color: var(--muted) !important; }
+.mini-job.done .money { color: var(--muted); }
 
 @media (max-width: 1000px) {
   .kpi-grid { grid-template-columns: repeat(2, 1fr); }

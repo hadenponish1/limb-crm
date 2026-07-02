@@ -4,7 +4,7 @@ import { StatusBadge, Avatar, SourceBadge } from '../components/ui'
 import ClientDrawer from '../components/ClientDrawer'
 import ImportModal from '../components/ImportModal'
 import { money } from '../lib/format'
-import { recurringLines, projectLines, clientMRR, clientWonProjects, clientKind } from '../lib/metrics'
+import { recurringLines, projectLines, clientMRR, clientWonProjects, clientKind, ltvByClient } from '../lib/metrics'
 
 const KIND_LABEL = { recurring: 'Recurring', project: 'Project', mixed: 'Recurring + Project', none: '—' }
 const KIND_CLASS = { recurring: 'recurring', project: 'project', mixed: 'recurring', none: 'lead' }
@@ -18,6 +18,7 @@ export default function Clients({ clients, updateClient, deleteClient, deleteCli
   const [showImport, setShowImport] = useState(false)
 
   const sources = [...new Set(clients.map((c) => c.source).filter(Boolean))].sort()
+  const ltv = ltvByClient(jobs || [])
 
   const filtered = clients.filter((c) => {
     if (filter === 'recurring' && recurringLines(c).length === 0) return false
@@ -88,7 +89,7 @@ export default function Clients({ clients, updateClient, deleteClient, deleteCli
             <thead>
               <tr>
                 <th style={{ width: 34 }}><input type="checkbox" className="chk" checked={allChecked} onChange={toggleAll} title="Select all" /></th>
-                <th>Client</th><th>Services</th><th>Mix</th><th>Monthly / Projects</th><th>Status</th><th>Notes</th><th></th>
+                <th>Client</th><th>Services</th><th>Mix</th><th>Monthly / Projects</th><th>LTV</th><th>Status</th><th>Notes</th><th></th>
               </tr>
             </thead>
             <tbody>
@@ -125,13 +126,14 @@ export default function Clients({ clients, updateClient, deleteClient, deleteCli
                       {won > 0 && <span style={{ color: 'var(--gold)' }}>{money(won)}<span style={{ color: 'var(--muted)', fontWeight: 400 }}> won</span></span>}
                       {mrr === 0 && won === 0 && <span style={{ color: 'var(--muted)', fontWeight: 400 }}>{money((c.services || []).reduce((a, s) => a + Number(s.amount || 0), 0))} quoted</span>}
                     </td>
+                    <td className="money" title="Lifetime value from completed jobs">{ltv[c.id] ? money(ltv[c.id]) : <span style={{ color: 'var(--muted)', fontWeight: 400 }}>—</span>}</td>
                     <td><StatusBadge status={c.status} /></td>
                     <td style={{ color: 'var(--muted)' }}>{(c.notes?.length || 0) > 0 ? `${c.notes.length}` : '—'}</td>
                     <td style={{ color: 'var(--muted)' }}><Icon.external style={{ width: 15, height: 15 }} /></td>
                   </tr>
                 )
               })}
-              {filtered.length === 0 && <tr><td colSpan={8} className="empty">No clients match.</td></tr>}
+              {filtered.length === 0 && <tr><td colSpan={9} className="empty">No clients match.</td></tr>}
             </tbody>
           </table>
         </div>

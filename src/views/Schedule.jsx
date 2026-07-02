@@ -3,6 +3,7 @@ import { Icon } from '../components/icons'
 import { TypeBadge } from '../components/ui'
 import MonthCalendar from '../components/MonthCalendar'
 import JobModal from '../components/JobModal'
+import DayPanel from '../components/DayPanel'
 import { money, dayParts, fmtTime, fmtDate } from '../lib/format'
 import { googleCalendarUrl, downloadICS } from '../lib/calendar'
 
@@ -13,6 +14,7 @@ export default function Schedule(store) {
   const [addDate, setAddDate] = useState(null)
   const [genOpen, setGenOpen] = useState(false)
   const [detail, setDetail] = useState(null)
+  const [dayPanel, setDayPanel] = useState(null) // ISO date | null
   const byId = Object.fromEntries(clients.map((c) => [c.id, c]))
 
   const openAdd = (date = null) => { setAddDate(date); setAddOpen(true) }
@@ -39,9 +41,15 @@ export default function Schedule(store) {
       </div>
 
       {view === 'calendar'
-        ? <MonthCalendar jobs={jobs} byId={byId} onDayClick={openAdd} onJobClick={setDetail} />
+        ? <MonthCalendar jobs={jobs} byId={byId} onDayClick={setDayPanel} onJobClick={setDetail} />
         : <ListView jobs={jobs} byId={byId} onJobClick={setDetail} />}
 
+      {dayPanel && (
+        <DayPanel date={dayPanel} jobs={jobs} byId={byId} deleteJob={deleteJob}
+          onClose={() => setDayPanel(null)}
+          onJobClick={(j) => setDetail(j)}
+          onNewJob={(date) => { setDayPanel(null); openAdd(date) }} />
+      )}
       {addOpen && <JobModal clients={clients} initialDate={addDate} onClose={() => setAddOpen(false)} addJob={addJob} upsertService={upsertService} generateSeries={generateSeries} />}
       {genOpen && <GenerateModal previewRecurring={previewRecurring} generateRecurring={generateRecurring} onClose={() => setGenOpen(false)} />}
       {detail && <JobDetail job={detail} client={byId[detail.clientId]} onClose={() => setDetail(null)} onDelete={(id) => { deleteJob(id); setDetail(null) }} />}

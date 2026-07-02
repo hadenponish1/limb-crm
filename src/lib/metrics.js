@@ -94,6 +94,22 @@ export function counts(clients) {
   }
 }
 
+// Lifetime value per client = revenue from their completed (past-dated) jobs.
+function todayISO() {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+export function ltvByClient(jobs) {
+  const t = todayISO()
+  const m = {}
+  jobs.forEach((j) => { if (j.date && j.date < t) m[j.clientId] = (m[j.clientId] || 0) + (j.amount || 0) })
+  return m
+}
+export function clientLTV(clientId, jobs) {
+  const t = todayISO()
+  return jobs.filter((j) => j.clientId === clientId && j.date && j.date < t).reduce((s, j) => s + (j.amount || 0), 0)
+}
+
 // Actual booked revenue per calendar month, keyed 'YYYY-MM', from the job schedule.
 export function monthlyActual(jobs) {
   const map = {}

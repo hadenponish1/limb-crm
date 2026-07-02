@@ -6,7 +6,7 @@ import ServiceLineFields from './ServiceLineFields'
 import JobModal from './JobModal'
 import { geocode } from '../lib/geocode'
 import { money, dayParts, fmtTime } from '../lib/format'
-import { clientMRR } from '../lib/metrics'
+import { clientMRR, clientLTV } from '../lib/metrics'
 import { googleCalendarUrl } from '../lib/calendar'
 
 export default function ClientDrawer({ client, onClose, updateClient, deleteClient, addNote, deleteNote, jobs, addJob, deleteJob, generateSeries, upsertService }) {
@@ -65,6 +65,7 @@ export default function ClientDrawer({ client, onClose, updateClient, deleteClie
 
   const todayIso = isoLocal(new Date())
   const clientJobs = (jobs || []).filter((j) => j.clientId === client.id).sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time))
+  const ltv = clientLTV(client.id, jobs || [])
 
   return (
     <div className="drawer-overlay" onClick={onClose}>
@@ -80,7 +81,7 @@ export default function ClientDrawer({ client, onClose, updateClient, deleteClie
         <div className="drawer-badges">
           <StatusBadge status={f.status} />
           {mrr > 0 && <span className="money" style={{ color: 'var(--green)' }}>{money(mrr)}/mo</span>}
-          {wonTotal > 0 && <span className="money" style={{ color: 'var(--gold)' }}>{money(wonTotal)} projects</span>}
+          <span className="money" title="Lifetime value from completed jobs" style={{ color: 'var(--moss)' }}>{money(ltv)} LTV</span>
           <span style={{ marginLeft: 'auto', fontSize: 12, color: 'var(--muted)' }}>{(f.services || []).length} service{(f.services || []).length !== 1 ? 's' : ''}</span>
         </div>
 
@@ -152,7 +153,7 @@ export default function ClientDrawer({ client, onClose, updateClient, deleteClie
               const past = j.date < todayIso
               const gcal = googleCalendarUrl({ title: `${f.name} — ${j.title}`, dateISO: j.date, time: j.time, durationMin: j.duration, details: j.title, location: f.address || '' })
               return (
-                <div className="mini-job" key={j.id}>
+                <div className={`mini-job${past ? ' done' : ''}`} key={j.id}>
                   <div className="mini-date"><div className="d">{dp.day}</div><div className="m">{dp.month}</div></div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontWeight: 600, fontSize: 13, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{j.title}</div>

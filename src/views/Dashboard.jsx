@@ -1,7 +1,8 @@
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
-import { Kpi, TypeBadge, StatusBadge, Avatar } from '../components/ui'
+import { Kpi } from '../components/ui'
 import { Icon } from '../components/icons'
-import { money, fmtDate, fmtTime } from '../lib/format'
+import MonthCalendar from '../components/MonthCalendar'
+import { money } from '../lib/format'
 import { monthlyRecurring, bookedThisMonth, projectRevenue, counts } from '../lib/metrics'
 
 export default function Dashboard({ clients, jobs, go }) {
@@ -11,7 +12,6 @@ export default function Dashboard({ clients, jobs, go }) {
   const c = counts(clients)
   const proj6 = series.reduce((s, m) => s + m.total, 0)
 
-  const upcoming = [...jobs].sort((a, b) => a.date.localeCompare(b.date)).slice(0, 5)
   const byId = Object.fromEntries(clients.map((x) => [x.id, x]))
 
   return (
@@ -68,29 +68,13 @@ export default function Dashboard({ clients, jobs, go }) {
         </div>
       </div>
 
-      <div className="card card-pad">
-        <div className="card-head">
-          <div className="card-title">Upcoming schedule</div>
-          <button className="btn btn-ghost btn-sm" onClick={() => go('schedule')}>View all</button>
+      <div>
+        <div className="card-head" style={{ marginBottom: 12 }}>
+          <div className="card-title">This week</div>
+          <button className="btn btn-ghost btn-sm" onClick={() => go('schedule')}>Open schedule</button>
         </div>
-        <table className="tbl">
-          <thead><tr><th>Client</th><th>Job</th><th>Date</th><th>Time</th><th>Type</th><th style={{ textAlign: 'right' }}>Amount</th></tr></thead>
-          <tbody>
-            {upcoming.map((j) => {
-              const cl = byId[j.clientId]
-              return (
-                <tr key={j.id}>
-                  <td><div className="cell-name"><Avatar name={cl?.name || '?'} service={cl?.service} /><div><b>{cl?.name}</b></div></div></td>
-                  <td>{j.title}</td>
-                  <td>{fmtDate(j.date)}</td>
-                  <td>{fmtTime(j.time)}</td>
-                  <td>{j.type && <TypeBadge type={j.type} />}</td>
-                  <td style={{ textAlign: 'right' }} className="money">{money(j.amount)}</td>
-                </tr>
-              )
-            })}
-          </tbody>
-        </table>
+        <MonthCalendar jobs={jobs} byId={byId} initialMode="week" lockMode compact
+          onDayClick={() => go('schedule')} onJobClick={() => go('schedule')} />
       </div>
     </div>
   )
