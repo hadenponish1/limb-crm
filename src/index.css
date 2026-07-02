@@ -224,6 +224,9 @@ input, select, textarea { font-family: inherit; font-size: 14px; }
 .bulk-bar { display: flex; align-items: center; justify-content: space-between; padding: 4px 2px 6px; }
 .bulk-bar span { font-size: 14px; color: var(--moss); }
 
+.linklike { color: var(--green); font-size: 13px; font-weight: 600; text-decoration: underline; background: none; }
+.linklike:hover { color: var(--moss); }
+
 .stack { display: flex; flex-direction: column; gap: 18px; }
 .mb { margin-bottom: 18px; }
 .section-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-bottom: 12px; }

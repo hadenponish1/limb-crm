@@ -27,7 +27,9 @@ function Splash({ children }) {
 }
 
 function Login() {
+  const [mode, setMode] = useState('password') // 'password' | 'magic'
   const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [sent, setSent] = useState(false)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
@@ -35,10 +37,17 @@ function Login() {
   async function submit(e) {
     e.preventDefault()
     setBusy(true); setError('')
-    const { error } = await supabase.auth.signInWithOtp({ email, options: { emailRedirectTo: window.location.origin } })
-    setBusy(false)
-    if (error) setError(error.message)
-    else setSent(true)
+    if (mode === 'password') {
+      const { error } = await supabase.auth.signInWithPassword({ email, password })
+      setBusy(false)
+      if (error) setError(error.message)
+      // success → onAuthStateChange shows the app automatically
+    } else {
+      const { error } = await supabase.auth.signInWithOtp({ email, options: { emailRedirectTo: window.location.origin } })
+      setBusy(false)
+      if (error) setError(error.message)
+      else setSent(true)
+    }
   }
 
   return (
@@ -58,19 +67,33 @@ function Login() {
           <div>
             <div className="card-title" style={{ marginBottom: 8 }}>Check your email</div>
             <p className="page-sub">We sent a sign-in link to <b>{email}</b>. Open it on this device to continue.</p>
+            <button className="btn btn-ghost btn-sm" style={{ marginTop: 16 }} onClick={() => { setSent(false); setMode('password') }}>Back to sign in</button>
           </div>
         ) : (
           <form onSubmit={submit}>
             <div className="card-title" style={{ marginBottom: 6 }}>Sign in</div>
-            <p className="page-sub" style={{ marginBottom: 18 }}>Enter your email and we'll send you a secure sign-in link — no password needed.</p>
+            <p className="page-sub" style={{ marginBottom: 18 }}>
+              {mode === 'password' ? 'Enter your email and password.' : "Enter your email and we'll send you a secure sign-in link."}
+            </p>
             <div className="field">
               <label>Email</label>
               <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@email.com" autoFocus />
             </div>
+            {mode === 'password' && (
+              <div className="field">
+                <label>Password</label>
+                <input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" />
+              </div>
+            )}
             {error && <div style={{ color: 'var(--danger)', fontSize: 13, marginBottom: 12 }}>{error}</div>}
             <button className="btn btn-primary" type="submit" disabled={busy} style={{ width: '100%', justifyContent: 'center' }}>
-              {busy ? 'Sending…' : 'Send sign-in link'}
+              {busy ? 'Signing in…' : mode === 'password' ? 'Sign in' : 'Send sign-in link'}
             </button>
+            <div style={{ textAlign: 'center', marginTop: 16 }}>
+              <button type="button" className="linklike" onClick={() => { setError(''); setMode(mode === 'password' ? 'magic' : 'password') }}>
+                {mode === 'password' ? 'Email me a sign-in link instead' : 'Use a password instead'}
+              </button>
+            </div>
           </form>
         )}
       </div>
