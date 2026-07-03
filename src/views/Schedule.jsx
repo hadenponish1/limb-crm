@@ -52,7 +52,7 @@ export default function Schedule(store) {
       )}
       {addOpen && <JobModal clients={clients} initialDate={addDate} onClose={() => setAddOpen(false)} addJob={addJob} upsertService={upsertService} generateSeries={generateSeries} />}
       {genOpen && <GenerateModal previewRecurring={previewRecurring} generateRecurring={generateRecurring} onClose={() => setGenOpen(false)} />}
-      {detail && <JobDetail job={detail} client={byId[detail.clientId]} onClose={() => setDetail(null)} onDelete={(id) => { deleteJob(id); setDetail(null) }} />}
+      {detail && <JobDetail job={detail} client={byId[detail.clientId]} updateJob={updateJob} onClose={() => setDetail(null)} onDelete={(id) => { deleteJob(id); setDetail(null) }} />}
     </div>
   )
 }
@@ -98,37 +98,55 @@ function ListView({ jobs, byId, onJobClick }) {
   )
 }
 
-function JobDetail({ job, client, onClose, onDelete }) {
+function JobDetail({ job, client, onClose, onDelete, updateJob }) {
+  const [f, setF] = useState({ title: job.title || '', date: job.date, time: job.time || '08:00', duration: job.duration || 60, amount: job.amount ?? 0 })
+  const [dirty, setDirty] = useState(false)
+  const set = (k) => (e) => { setF({ ...f, [k]: e.target.value }); setDirty(true) }
+
+  function save() {
+    updateJob(job.id, { title: f.title, date: f.date, time: f.time, duration: Number(f.duration) || 60, amount: Number(f.amount) || 0 })
+    setDirty(false)
+    onClose()
+  }
+
   const gcal = googleCalendarUrl({
-    title: `${client?.name || 'Job'} — ${job.title}`,
-    dateISO: job.date, time: job.time, durationMin: job.duration,
-    details: `${job.title}\nClient: ${client?.contact || ''} ${client?.phone || ''}\nAmount: ${money(job.amount)}`,
+    title: `${client?.name || 'Job'} — ${f.title}`,
+    dateISO: f.date, time: f.time, durationMin: Number(f.duration) || 60,
+    details: `${f.title}\nClient: ${client?.contact || ''} ${client?.phone || ''}\nAmount: ${money(Number(f.amount) || 0)}`,
     location: client?.address || '',
   })
   return (
     <div className="overlay" onClick={onClose}>
-      <div className="modal" style={{ maxWidth: 440 }} onClick={(e) => e.stopPropagation()}>
+      <div className="modal" style={{ maxWidth: 460 }} onClick={(e) => e.stopPropagation()}>
         <div className="modal-head">
           <div>
             <div className="card-title">{client?.name}</div>
-            <div className="page-sub">{job.title}</div>
+            {client?.address && <div className="page-sub"><Icon.pin style={{ width: 12, height: 12, verticalAlign: '-1px' }} /> {client.address}</div>}
           </div>
           <button className="icon-btn" onClick={onClose}><Icon.x /></button>
         </div>
         <div className="modal-body">
-          <div className="detail-row"><Icon.calendar /> <span>{fmtDate(job.date, { weekday: 'long', month: 'long', day: 'numeric' })}</span></div>
-          <div className="detail-row"><Icon.clock /> <span>{fmtTime(job.time)} · {job.duration} min</span></div>
-          {client?.address && <div className="detail-row"><Icon.pin /> <span>{client.address}</span></div>}
-          <div className="detail-row"><Icon.dollar /> <span className="money">{money(job.amount)}</span></div>
-          {job.recurring && <div className="detail-row" style={{ color: 'var(--green)' }}><Icon.repeat /> <span>Auto-generated recurring visit</span></div>}
-          <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>
-            <a className="btn btn-primary btn-sm" href={gcal} target="_blank" rel="noreferrer" style={{ flex: 1, justifyContent: 'center' }}><Icon.calendar /> Google Calendar</a>
-            <button className="btn btn-ghost btn-sm" onClick={() => downloadICS({ title: `${client?.name} — ${job.title}`, dateISO: job.date, time: job.time, durationMin: job.duration, location: client?.address })}><Icon.download /> .ics</button>
+          <div className="field"><label>Job description</label><input value={f.title} onChange={set('title')} placeholder="e.g. Lawn Maintenance" /></div>
+          <div className="field-row">
+            <div className="field"><label>Date</label><input type="date" value={f.date} onChange={set('date')} /></div>
+            <div className="field"><label>Start time</label><input type="time" value={f.time} onChange={set('time')} /></div>
+          </div>
+          <div className="field-row">
+            <div className="field"><label>Duration (min)</label><input type="number" value={f.duration} onChange={set('duration')} /></div>
+            <div className="field"><label>Amount</label><input type="number" value={f.amount} onChange={set('amount')} /></div>
+          </div>
+          {job.recurring && <div className="detail-row" style={{ color: 'var(--green)', borderBottom: 'none', paddingTop: 0 }}><Icon.repeat /> <span>Auto-generated recurring visit</span></div>}
+          <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
+            <a className="btn btn-ghost btn-sm" href={gcal} target="_blank" rel="noreferrer" style={{ flex: 1, justifyContent: 'center' }}><Icon.calendar /> Google Calendar</a>
+            <button className="btn btn-ghost btn-sm" onClick={() => downloadICS({ title: `${client?.name} — ${f.title}`, dateISO: f.date, time: f.time, durationMin: Number(f.duration) || 60, location: client?.address })}><Icon.download /> .ics</button>
           </div>
         </div>
         <div className="modal-foot" style={{ justifyContent: 'space-between' }}>
           <button className="btn btn-ghost btn-sm" style={{ color: 'var(--danger)' }} onClick={() => onDelete(job.id)}><Icon.trash /> Delete</button>
-          <button className="btn btn-ghost" onClick={onClose}>Close</button>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button className="btn btn-ghost" onClick={onClose}>Close</button>
+            <button className="btn btn-primary" onClick={save} disabled={!dirty}>{dirty ? 'Save changes' : 'Saved'}</button>
+          </div>
         </div>
       </div>
     </div>
