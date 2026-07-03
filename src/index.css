@@ -331,6 +331,30 @@ input, select, textarea { font-family: inherit; font-size: 14px; }
 .mini-job.done .mini-date .d, .mini-job.done > div b, .mini-job.done > div { color: var(--muted) !important; }
 .mini-job.done .money { color: var(--muted); }
 
+/* ---------- Time-grid day view (drag to reschedule) ---------- */
+.drawer.day { width: 520px; }
+.tg { position: relative; margin-top: 4px; }
+.tg-line { position: absolute; left: 0; right: 0; height: 1px; background: var(--line); }
+.tg-hour { position: absolute; left: 0; top: -7px; width: 46px; text-align: right; padding-right: 8px; font-size: 10.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.tg-col { position: absolute; left: 52px; right: 4px; top: 0; bottom: 0; }
+.tg-event {
+  position: absolute; border-radius: 7px; padding: 4px 7px; overflow: hidden; cursor: grab;
+  background: color-mix(in srgb, #6B7F65 20%, #fff); border-left: 3px solid #6B7F65;
+  box-shadow: 0 1px 2px rgba(27,42,28,.08); touch-action: none; user-select: none;
+}
+.tg-event.project { background: color-mix(in srgb, #c99a4b 20%, #fff); border-left-color: #c99a4b; }
+.tg-event.done { background: #f0eee7; border-left-color: #c3bfae; }
+.tg-event.dragging { cursor: grabbing; box-shadow: var(--shadow-lg); z-index: 5; opacity: .95; }
+.tg-event-time { font-size: 10px; font-weight: 700; color: var(--muted); font-variant-numeric: tabular-nums; line-height: 1.2; }
+.tg-event-title { font-size: 12px; font-weight: 600; color: var(--ink); line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tg-event.done .tg-event-title { color: var(--muted); }
+.tg-event-sub { font-size: 10.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tg-event-actions { position: absolute; top: 3px; right: 3px; display: none; gap: 1px; background: rgba(255,255,255,.7); border-radius: 6px; }
+.tg-event:hover .tg-event-actions { display: flex; }
+.tg-event-actions .icon-btn { width: 22px; height: 22px; }
+
+@media (max-width: 560px) { .drawer.day { width: 94vw; } }
+
 @media (max-width: 1000px) {
   .kpi-grid { grid-template-columns: repeat(2, 1fr); }
   .two-col { grid-template-columns: 1fr; }

@@ -8,7 +8,7 @@ import { money, dayParts, fmtTime, fmtDate } from '../lib/format'
 import { googleCalendarUrl, downloadICS } from '../lib/calendar'
 
 export default function Schedule(store) {
-  const { clients, jobs, addJob, deleteJob, upsertService, generateSeries, previewRecurring, generateRecurring } = store
+  const { clients, jobs, addJob, deleteJob, updateJob, upsertService, generateSeries, previewRecurring, generateRecurring } = store
   const [view, setView] = useState('calendar')
   const [addOpen, setAddOpen] = useState(false)
   const [addDate, setAddDate] = useState(null)
@@ -45,7 +45,7 @@ export default function Schedule(store) {
         : <ListView jobs={jobs} byId={byId} onJobClick={setDetail} />}
 
       {dayPanel && (
-        <DayPanel date={dayPanel} jobs={jobs} byId={byId} deleteJob={deleteJob}
+        <DayPanel date={dayPanel} jobs={jobs} byId={byId} deleteJob={deleteJob} updateJob={updateJob}
           onClose={() => setDayPanel(null)}
           onJobClick={(j) => setDetail(j)}
           onNewJob={(date) => { setDayPanel(null); openAdd(date) }} />

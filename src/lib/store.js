@@ -86,6 +86,8 @@ const rowToClient = (r) => ({ id: r.id, name: r.name, contact: r.contact, email:
 const rowToJob = (r) => ({ id: r.id, clientId: r.client_id, serviceId: r.service_id, title: r.title, date: r.date, time: r.time, duration: r.duration, amount: Number(r.amount) || 0, type: r.type, recurring: r.recurring })
 const clientToRow = (c) => ({ id: c.id, name: c.name, contact: c.contact, email: c.email, phone: c.phone, address: c.address, lat: c.lat, lng: c.lng, status: c.status, source: c.source || null, services: c.services || [], notes: c.notes || [] })
 const jobToRow = (j) => ({ id: j.id, client_id: j.clientId, service_id: j.serviceId, title: j.title, date: j.date, time: j.time, duration: j.duration, amount: j.amount, type: j.type, recurring: !!j.recurring })
+const JOB_COLS = { clientId: 'client_id', serviceId: 'service_id', title: 'title', date: 'date', time: 'time', duration: 'duration', amount: 'amount', type: 'type', recurring: 'recurring' }
+const jobPatchToRow = (patch) => { const r = {}; for (const k in patch) if (JOB_COLS[k]) r[JOB_COLS[k]] = patch[k]; return r }
 
 // ---- Shared in-memory store (source of truth for the UI in both modes) ----
 let listeners = []
@@ -117,6 +119,7 @@ const cloud = {
   deleteClients: (ids) => supabase.from('clients').delete().in('id', ids).then(({ error }) => error && console.error(error)),
   insertJobs: (jobs) => supabase.from('jobs').insert(jobs.map(jobToRow)).then(({ error }) => error && console.error(error)),
   deleteJob: (id) => supabase.from('jobs').delete().eq('id', id).then(({ error }) => error && console.error(error)),
+  updateJob: (id, patch) => supabase.from('jobs').update(jobPatchToRow(patch)).eq('id', id).then(({ error }) => error && console.error(error)),
 }
 
 function visitsFor(client, line, today, horizon, startISO) {
@@ -210,6 +213,11 @@ export function useStore() {
     commit(); if (isCloud) cloud.deleteJob(id)
   }, [])
 
+  const updateJob = useCallback((id, patch) => {
+    state = { ...state, jobs: state.jobs.map((j) => (j.id === id ? { ...j, ...patch } : j)) }
+    commit(); if (isCloud) cloud.updateJob(id, patch)
+  }, [])
+
   const generateSeries = useCallback((clientId, serviceId, weeks = 8, startISO) => {
     const client = findClient(clientId)
     const line = client?.services.find((s) => s.id === serviceId)
@@ -263,6 +271,6 @@ export function useStore() {
   return {
     ...state, loading, cloud: isCloud,
     addClient, updateClient, deleteClient, deleteClients, addNote, deleteNote, upsertService,
-    addJob, deleteJob, generateSeries, previewRecurring, generateRecurring, bulkImport, reset,
+    addJob, deleteJob, updateJob, generateSeries, previewRecurring, generateRecurring, bulkImport, reset,
   }
 }
