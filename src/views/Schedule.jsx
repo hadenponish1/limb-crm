@@ -133,7 +133,7 @@ function JobDetail({ job, client, onClose, onDelete, updateJob }) {
           </div>
           <div className="field-row">
             <div className="field"><label>Duration (min)</label><input type="number" value={f.duration} onChange={set('duration')} /></div>
-            <div className="field"><label>Amount</label><input type="number" value={f.amount} onChange={set('amount')} /></div>
+            <div className="field"><label>Amount</label><input type="number" step="0.01" value={f.amount} onChange={set('amount')} /></div>
           </div>
           {job.recurring && <div className="detail-row" style={{ color: 'var(--green)', borderBottom: 'none', paddingTop: 0 }}><Icon.repeat /> <span>Auto-generated recurring visit</span></div>}
           <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>

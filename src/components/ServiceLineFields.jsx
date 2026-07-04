@@ -28,7 +28,7 @@ export default function ServiceLineFields({ line, onChange }) {
       <div className="field-row">
         <div className="field">
           <label>{line.type === 'recurring' ? 'Price / visit' : 'Quoted amount'}</label>
-          <input type="number" min="0" value={line.amount} onChange={(e) => set('amount', Number(e.target.value) || 0)} placeholder="0" />
+          <input type="number" min="0" step="0.01" value={line.amount} onChange={(e) => set('amount', e.target.value)} placeholder="0" />
         </div>
         {line.type === 'recurring' ? (
           <div className="field">

@@ -13,10 +13,10 @@ export function clientMRR(c) {
 }
 // Won project value booked for a client
 export function clientWonProjects(c) {
-  return projectLines(c).filter((l) => l.stage === 'won').reduce((s, l) => s + l.amount, 0)
+  return projectLines(c).filter((l) => l.stage === 'won').reduce((s, l) => s + (Number(l.amount) || 0), 0)
 }
 export function clientQuotedProjects(c) {
-  return projectLines(c).filter((l) => l.stage !== 'won').reduce((s, l) => s + l.amount, 0)
+  return projectLines(c).filter((l) => l.stage !== 'won').reduce((s, l) => s + (Number(l.amount) || 0), 0)
 }
 
 // A short label for the client's overall relationship

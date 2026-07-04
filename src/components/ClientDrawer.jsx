@@ -30,16 +30,20 @@ export default function ClientDrawer({ client, onClose, updateClient, deleteClie
   function removeLine(id) { touch({ ...f, services: f.services.filter((s) => s.id !== id) }) }
 
   // Persist the form (minus notes) synchronously so JobModal/generateSeries see the latest services.
+  // service line amounts are edited as raw strings (to allow typing decimals) —
+  // coerce them back to numbers before persisting.
+  const cleanServices = (svcs) => (svcs || []).map((s) => ({ ...s, amount: Number(s.amount) || 0 }))
+
   function commit() {
     const { notes, ...rest } = f
-    updateClient(client.id, rest)
+    updateClient(client.id, { ...rest, services: cleanServices(rest.services) })
     setDirty(false)
   }
 
   async function save() {
     setSaving(true)
     const { notes, ...rest } = f
-    let patch = { ...rest }
+    let patch = { ...rest, services: cleanServices(rest.services) }
     if (f.address && f.address !== client.address) {
       const coords = await geocode(f.address)
       if (coords) { patch.lat = coords.lat; patch.lng = coords.lng }

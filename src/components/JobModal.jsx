@@ -139,7 +139,7 @@ export default function JobModal({
           {jobType === 'recurring' ? (
             <>
               <div className="field-row">
-                <div className="field"><label>Price / visit</label><input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0" required /></div>
+                <div className="field"><label>Price / visit</label><input type="number" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0" required /></div>
                 <div className="field"><label>Frequency</label>
                   <select value={freq} onChange={(e) => setFreq(e.target.value)}>{FREQUENCIES.map((x) => <option key={x.id} value={x.id}>{x.label}</option>)}</select>
                 </div>
@@ -162,7 +162,7 @@ export default function JobModal({
               </div>
               <div className="field-row">
                 <div className="field"><label>Duration (min)</label><input type="number" value={duration} onChange={(e) => setDuration(e.target.value)} /></div>
-                <div className="field"><label>Amount</label><input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0" required /></div>
+                <div className="field"><label>Amount</label><input type="number" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0" required /></div>
               </div>
               <label style={{ display: 'flex', alignItems: 'center', gap: 9, fontSize: 13.5, fontWeight: 500, cursor: 'pointer' }}>
                 <input type="checkbox" checked={pushGoogle} onChange={(e) => setPushGoogle(e.target.checked)} style={{ width: 16, height: 16 }} />
