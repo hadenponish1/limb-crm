@@ -3,6 +3,7 @@ import { useStore } from './lib/store'
 import { supabase } from './lib/supabase'
 import { Icon } from './components/icons'
 import LeadModal from './components/LeadModal'
+import AutoGeocoder from './components/AutoGeocoder'
 import Dashboard from './views/Dashboard'
 import Schedule from './views/Schedule'
 import Clients from './views/Clients'
@@ -99,6 +100,7 @@ export default function App() {
       </main>
 
       {showLead && <LeadModal onClose={() => setShowLead(false)} onSave={store.addClient} />}
+      <AutoGeocoder clients={store.clients} updateClient={store.updateClient} enabled={!store.loading} />
     </div>
   )
 }
