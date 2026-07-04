@@ -355,6 +355,22 @@ input, select, textarea { font-family: inherit; font-size: 14px; }
 
 @media (max-width: 560px) { .drawer.day { width: 94vw; } }
 
+/* ---------- Revenue calendar (Metrics) ---------- */
+.rev-grid { display: grid; grid-template-columns: repeat(7, 1fr) 92px; gap: 6px; margin-bottom: 6px; }
+.rev-head { margin-bottom: 4px; }
+.rev-dow { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); padding: 2px 4px; }
+.rev-cell {
+  min-height: 68px; border: 1px solid var(--line); border-radius: 10px; padding: 7px 8px; background: #fff;
+  display: flex; flex-direction: column; justify-content: space-between; align-items: flex-start; cursor: pointer; transition: border-color .12s;
+}
+.rev-cell:hover:not(.out) { border-color: var(--green); box-shadow: 0 0 0 1px var(--green); }
+.rev-cell.out { background: transparent; border-color: transparent; cursor: default; }
+.rev-cell.today { border-color: var(--green); box-shadow: 0 0 0 1px var(--green); }
+.rev-date { font-size: 12px; font-weight: 600; color: var(--ink); }
+.rev-cell.out .rev-date { color: #c3bfae; }
+.rev-amt { font-family: var(--font-serif); font-size: 14.5px; font-weight: 600; color: var(--moss); }
+.rev-week { display: flex; align-items: center; justify-content: flex-end; padding-right: 8px; background: var(--paper); border-radius: 10px; font-weight: 700; font-size: 13px; color: var(--green); font-variant-numeric: tabular-nums; }
+
 @media (max-width: 1000px) {
   .kpi-grid { grid-template-columns: repeat(2, 1fr); }
   .two-col { grid-template-columns: 1fr; }
