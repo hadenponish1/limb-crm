@@ -30,7 +30,12 @@ export default function App() {
   const store = useStore()
   const [tab, setTab] = useState('dashboard')
   const [showLead, setShowLead] = useState(false)
+  const [focusClient, setFocusClient] = useState(null)   // client id to open in the drawer
+  const [metricsAnchor, setMetricsAnchor] = useState(null) // section to scroll to on Metrics
   const [title, sub] = TITLES[tab]
+
+  const go = (t, anchor) => { setTab(t); if (anchor) setMetricsAnchor(anchor) }
+  const openClient = (id) => { setFocusClient(id); setTab('clients') }
 
   return (
     <div className="app">
@@ -89,11 +94,11 @@ export default function App() {
             <div className="empty" style={{ padding: 80 }}>Loading your data…</div>
           ) : (
             <>
-              {tab === 'dashboard' && <Dashboard {...store} go={setTab} />}
-              {tab === 'schedule' && <Schedule {...store} />}
-              {tab === 'clients' && <Clients {...store} onNew={() => setShowLead(true)} />}
+              {tab === 'dashboard' && <Dashboard {...store} go={go} />}
+              {tab === 'schedule' && <Schedule {...store} onOpenClient={openClient} />}
+              {tab === 'clients' && <Clients {...store} onNew={() => setShowLead(true)} focusClientId={focusClient} onFocusHandled={() => setFocusClient(null)} />}
               {tab === 'map' && <MapView {...store} />}
-              {tab === 'metrics' && <Metrics {...store} />}
+              {tab === 'metrics' && <Metrics {...store} onOpenClient={openClient} scrollTo={metricsAnchor} onScrolled={() => setMetricsAnchor(null)} />}
             </>
           )}
         </div>

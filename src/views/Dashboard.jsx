@@ -20,7 +20,7 @@ export default function Dashboard({ clients, jobs, go }) {
         <Kpi label="Booked this month" value={money(booked)} icon="dollar"
           meta={<><Icon.trend style={{ width: 14, height: 14 }} className="up" /> <span className="up">from schedule</span></>} />
         <Kpi label="Monthly recurring (MRR)" value={money(mrr)} icon="repeat"
-          meta={<span className="up">{c.recurringClients} clients on maintenance</span>} />
+          meta={<button className="kpi-link" onClick={() => go('metrics', 'maintenance')}>{c.recurringClients} clients on maintenance →</button>} />
         <Kpi label="Projected (6 mo)" value={money(proj6)} icon="trend"
           meta={<span style={{ color: 'var(--muted)' }}>recurring + projects + pipeline</span>} />
         <Kpi label="Active clients" value={c.active} icon="users"

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Icon } from '../components/icons'
 import { StatusBadge, Avatar, SourceBadge } from '../components/ui'
 import ClientDrawer from '../components/ClientDrawer'
@@ -9,13 +9,18 @@ import { recurringLines, projectLines, clientMRR, clientWonProjects, clientKind,
 const KIND_LABEL = { recurring: 'Recurring', project: 'Project', mixed: 'Recurring + Project', none: '—' }
 const KIND_CLASS = { recurring: 'recurring', project: 'project', mixed: 'recurring', none: 'lead' }
 
-export default function Clients({ clients, updateClient, deleteClient, deleteClients, addNote, deleteNote, onNew, jobs, addJob, deleteJob, generateSeries, upsertService, bulkImport }) {
+export default function Clients({ clients, updateClient, deleteClient, deleteClients, addNote, deleteNote, onNew, jobs, addJob, deleteJob, generateSeries, upsertService, bulkImport, focusClientId, onFocusHandled }) {
   const [filter, setFilter] = useState('all')
   const [q, setQ] = useState('')
   const [sourceFilter, setSourceFilter] = useState('all')
   const [selectedId, setSelectedId] = useState(null)
   const [checked, setChecked] = useState(() => new Set())
   const [showImport, setShowImport] = useState(false)
+
+  // open a specific client's drawer when navigated here from another view
+  useEffect(() => {
+    if (focusClientId) { setSelectedId(focusClientId); onFocusHandled?.() }
+  }, [focusClientId])
 
   const sources = [...new Set(clients.map((c) => c.source).filter(Boolean))].sort()
   const ltv = ltvByClient(jobs || [])

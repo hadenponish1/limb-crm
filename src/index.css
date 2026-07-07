@@ -228,6 +228,11 @@ input, select, textarea { font-family: inherit; font-size: 14px; }
 .linklike { color: var(--green); font-size: 13px; font-weight: 600; text-decoration: underline; background: none; }
 .linklike:hover { color: var(--moss); }
 
+.title-link { background: none; text-align: left; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; }
+.title-link:hover .card-title { text-decoration: underline; }
+.kpi-link { background: none; cursor: pointer; color: var(--green); font-weight: 600; font-size: inherit; padding: 0; }
+.kpi-link:hover { color: var(--moss); text-decoration: underline; }
+
 .stack { display: flex; flex-direction: column; gap: 18px; }
 .mb { margin-bottom: 18px; }
 .section-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-bottom: 12px; }

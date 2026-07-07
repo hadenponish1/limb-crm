@@ -19,6 +19,18 @@ export function clientQuotedProjects(c) {
   return projectLines(c).filter((l) => l.stage !== 'won').reduce((s, l) => s + (Number(l.amount) || 0), 0)
 }
 
+// Monthly $ for one recurring service line
+export function recurringMonthly(line) {
+  return (Number(line.amount) || 0) * perMonth(line.frequency)
+}
+// Rows for the "recurring maintenance" breakdown: one per recurring line on an active client
+export function maintenanceReport(clients) {
+  const rows = []
+  clients.filter((c) => c.status === 'active').forEach((c) =>
+    recurringLines(c).forEach((l) => rows.push({ clientId: c.id, name: c.name, source: c.source, service: l.service, frequency: l.frequency, amount: Number(l.amount) || 0, monthly: recurringMonthly(l) })))
+  return rows.sort((a, b) => b.monthly - a.monthly)
+}
+
 // A short label for the client's overall relationship
 export function clientKind(c) {
   const r = recurringLines(c).length

@@ -1,16 +1,27 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, PieChart, Pie, Cell, Legend } from 'recharts'
 import { Kpi } from '../components/ui'
 import RevenueCalendar from '../components/RevenueCalendar'
 import DayPanel from '../components/DayPanel'
 import { money } from '../lib/format'
-import { monthlyRecurring, projectRevenue, counts, byService, revenueTimeline } from '../lib/metrics'
+import { FREQUENCIES } from '../lib/store'
+import { monthlyRecurring, projectRevenue, counts, byService, revenueTimeline, maintenanceReport } from '../lib/metrics'
 
 const PIE = ['#6B7F65', '#c99a4b']
+const freqLabel = (id) => FREQUENCIES.find((f) => f.id === id)?.label || id
 
-export default function Metrics({ clients, jobs }) {
+export default function Metrics({ clients, jobs, onOpenClient, scrollTo, onScrolled }) {
   const [dayPanel, setDayPanel] = useState(null)
+  const maintRef = useRef(null)
   const byId = Object.fromEntries(clients.map((x) => [x.id, x]))
+  const maint = maintenanceReport(clients)
+
+  useEffect(() => {
+    if (scrollTo === 'maintenance' && maintRef.current) {
+      maintRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      onScrolled?.()
+    }
+  }, [scrollTo])
   const c = counts(clients)
   const mrr = monthlyRecurring(clients)
   const { activeProjects, pipeline } = projectRevenue(clients, 6)
@@ -33,6 +44,40 @@ export default function Metrics({ clients, jobs }) {
         <Kpi label="This month (actual)" value={money(currentActual)} icon="calendar" meta={<span style={{ color: 'var(--muted)' }}>booked so far</span>} />
         <Kpi label="Monthly recurring (MRR)" value={money(mrr)} icon="repeat" meta={<span style={{ color: 'var(--muted)' }}>≈ {money(mrr * 12)}/yr · {c.recurringClients} on maintenance</span>} />
         <Kpi label="Projected (next 3 mo)" value={money(projectedNext)} icon="trend" meta={<span style={{ color: 'var(--muted)' }}>recurring + projects + pipeline</span>} />
+      </div>
+
+      <div className="card" ref={maintRef} style={{ scrollMarginTop: 20 }}>
+        <div className="card-pad" style={{ paddingBottom: 4 }}>
+          <div className="card-head">
+            <div className="card-title">Recurring maintenance</div>
+            <span style={{ fontSize: 13, color: 'var(--muted)' }}>{c.recurringClients} client{c.recurringClients !== 1 ? 's' : ''} · <b style={{ color: 'var(--green)' }}>{money(mrr)}/mo</b> · {money(mrr * 12)}/yr</span>
+          </div>
+        </div>
+        <div style={{ padding: '0 12px 12px' }}>
+          <table className="tbl">
+            <thead><tr><th>Client</th><th>Service</th><th>Frequency</th><th>Price / visit</th><th style={{ textAlign: 'right' }}>Monthly</th></tr></thead>
+            <tbody>
+              {maint.map((r, i) => (
+                <tr key={i} className={onOpenClient ? 'click' : ''} onClick={onOpenClient ? () => onOpenClient(r.clientId) : undefined}>
+                  <td><b>{r.name}</b>{r.source ? <span className="badge src" style={{ marginLeft: 8, background: '#e7edf6', color: '#3a5f8a' }}>{r.source}</span> : null}</td>
+                  <td>{r.service}</td>
+                  <td><span className="badge recurring">{freqLabel(r.frequency)}</span></td>
+                  <td className="money">{money(r.amount)}</td>
+                  <td className="money" style={{ textAlign: 'right' }}>{money(r.monthly)}</td>
+                </tr>
+              ))}
+              {maint.length === 0 && <tr><td colSpan={5} className="empty">No recurring maintenance clients yet.</td></tr>}
+            </tbody>
+            {maint.length > 0 && (
+              <tfoot>
+                <tr>
+                  <td colSpan={4} style={{ fontWeight: 700, borderTop: '2px solid var(--line)' }}>Total MRR</td>
+                  <td className="money" style={{ textAlign: 'right', fontWeight: 700, borderTop: '2px solid var(--line)', color: 'var(--green)' }}>{money(mrr)}</td>
+                </tr>
+              </tfoot>
+            )}
+          </table>
+        </div>
       </div>
 
       <div className="card card-pad">

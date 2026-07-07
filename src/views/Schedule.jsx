@@ -8,7 +8,7 @@ import { money, dayParts, fmtTime, fmtDate } from '../lib/format'
 import { googleCalendarUrl, downloadICS } from '../lib/calendar'
 
 export default function Schedule(store) {
-  const { clients, jobs, addJob, deleteJob, updateJob, upsertService, generateSeries, previewRecurring, generateRecurring } = store
+  const { clients, jobs, addJob, deleteJob, updateJob, upsertService, generateSeries, previewRecurring, generateRecurring, onOpenClient } = store
   const [view, setView] = useState('calendar')
   const [addOpen, setAddOpen] = useState(false)
   const [addDate, setAddDate] = useState(null)
@@ -52,7 +52,7 @@ export default function Schedule(store) {
       )}
       {addOpen && <JobModal clients={clients} initialDate={addDate} onClose={() => setAddOpen(false)} addJob={addJob} upsertService={upsertService} generateSeries={generateSeries} />}
       {genOpen && <GenerateModal previewRecurring={previewRecurring} generateRecurring={generateRecurring} onClose={() => setGenOpen(false)} />}
-      {detail && <JobDetail job={detail} client={byId[detail.clientId]} updateJob={updateJob} onClose={() => setDetail(null)} onDelete={(id) => { deleteJob(id); setDetail(null) }} />}
+      {detail && <JobDetail job={detail} client={byId[detail.clientId]} updateJob={updateJob} onOpenClient={onOpenClient} onClose={() => setDetail(null)} onDelete={(id) => { deleteJob(id); setDetail(null) }} />}
     </div>
   )
 }
@@ -98,7 +98,7 @@ function ListView({ jobs, byId, onJobClick }) {
   )
 }
 
-function JobDetail({ job, client, onClose, onDelete, updateJob }) {
+function JobDetail({ job, client, onClose, onDelete, updateJob, onOpenClient }) {
   const [f, setF] = useState({ title: job.title || '', date: job.date, time: job.time || '08:00', duration: job.duration || 60, amount: job.amount ?? 0 })
   const [dirty, setDirty] = useState(false)
   const set = (k) => (e) => { setF({ ...f, [k]: e.target.value }); setDirty(true) }
@@ -120,7 +120,13 @@ function JobDetail({ job, client, onClose, onDelete, updateJob }) {
       <div className="modal" style={{ maxWidth: 460 }} onClick={(e) => e.stopPropagation()}>
         <div className="modal-head">
           <div>
-            <div className="card-title">{client?.name}</div>
+            {onOpenClient && client ? (
+              <button type="button" className="title-link" onClick={() => { onOpenClient(client.id); onClose() }} title="Open client profile">
+                <span className="card-title">{client.name}</span> <Icon.external style={{ width: 15, height: 15, color: 'var(--muted)', verticalAlign: '-2px' }} />
+              </button>
+            ) : (
+              <div className="card-title">{client?.name}</div>
+            )}
             {client?.address && <div className="page-sub"><Icon.pin style={{ width: 12, height: 12, verticalAlign: '-1px' }} /> {client.address}</div>}
           </div>
           <button className="icon-btn" onClick={onClose}><Icon.x /></button>
