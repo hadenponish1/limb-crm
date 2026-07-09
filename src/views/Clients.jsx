@@ -3,8 +3,14 @@ import { Icon } from '../components/icons'
 import { StatusBadge, Avatar, SourceBadge } from '../components/ui'
 import ClientDrawer from '../components/ClientDrawer'
 import ImportModal from '../components/ImportModal'
-import { money } from '../lib/format'
+import { money, fmtDate } from '../lib/format'
 import { recurringLines, projectLines, clientMRR, clientWonProjects, clientKind, ltvByClient } from '../lib/metrics'
+
+const monthsSince = (iso) => {
+  if (!iso) return 1
+  const s = new Date(iso + 'T00:00:00'); const n = new Date()
+  return Math.max(1, (n.getFullYear() - s.getFullYear()) * 12 + (n.getMonth() - s.getMonth()) + 1)
+}
 
 const KIND_LABEL = { recurring: 'Recurring', project: 'Project', mixed: 'Recurring + Project', none: '—' }
 const KIND_CLASS = { recurring: 'recurring', project: 'project', mixed: 'recurring', none: 'lead' }
@@ -22,8 +28,16 @@ export default function Clients({ clients, updateClient, deleteClient, deleteCli
     if (focusClientId) { setSelectedId(focusClientId); onFocusHandled?.() }
   }, [focusClientId])
 
+  const [sort, setSort] = useState({ key: 'name', dir: 'asc' })
+
   const sources = [...new Set(clients.map((c) => c.source).filter(Boolean))].sort()
   const ltv = ltvByClient(jobs || [])
+
+  // earliest job date per client (falls back to createdAt)
+  const firstJob = {}
+  ;(jobs || []).forEach((j) => { if (j.date && (!firstJob[j.clientId] || j.date < firstJob[j.clientId])) firstJob[j.clientId] = j.date })
+  const startOf = (c) => firstJob[c.id] || c.createdAt || null
+  const avgMo = (c) => { const l = ltv[c.id] || 0; return l ? l / monthsSince(startOf(c)) : 0 }
 
   const filtered = clients.filter((c) => {
     if (filter === 'recurring' && recurringLines(c).length === 0) return false
@@ -34,6 +48,24 @@ export default function Clients({ clients, updateClient, deleteClient, deleteCli
     if (q && !hay.includes(q.toLowerCase())) return false
     return true
   })
+
+  const accessors = {
+    name: (c) => c.name.toLowerCase(),
+    monthly: (c) => clientMRR(c),
+    ltv: (c) => ltv[c.id] || 0,
+    avg: (c) => avgMo(c),
+    started: (c) => startOf(c) || '',
+    status: (c) => c.status,
+    notes: (c) => c.notes?.length || 0,
+  }
+  const acc = accessors[sort.key] || accessors.name
+  const sorted = [...filtered].sort((a, b) => {
+    const av = acc(a), bv = acc(b)
+    const r = av < bv ? -1 : av > bv ? 1 : 0
+    return sort.dir === 'asc' ? r : -r
+  })
+  const toggleSort = (key) => setSort((s) => (s.key === key ? { key, dir: s.dir === 'asc' ? 'desc' : 'asc' } : { key, dir: key === 'name' ? 'asc' : 'desc' }))
+  const arrow = (key) => (sort.key === key ? (sort.dir === 'asc' ? ' ↑' : ' ↓') : '')
 
   const selected = clients.find((c) => c.id === selectedId) || null
 
@@ -89,16 +121,25 @@ export default function Clients({ clients, updateClient, deleteClient, deleteCli
             <div className="card-title">Clients & leads <span style={{ color: 'var(--muted)', fontWeight: 400, fontSize: 14 }}>({filtered.length})</span></div>
           )}
         </div>
-        <div style={{ padding: '4px 12px 10px' }}>
+        <div style={{ padding: '4px 12px 10px', overflowX: 'auto' }}>
           <table className="tbl">
             <thead>
               <tr>
                 <th style={{ width: 34 }}><input type="checkbox" className="chk" checked={allChecked} onChange={toggleAll} title="Select all" /></th>
-                <th>Client</th><th>Services</th><th>Mix</th><th>Monthly / Projects</th><th>LTV</th><th>Status</th><th>Notes</th><th></th>
+                <th className="sortable" onClick={() => toggleSort('name')}>Client{arrow('name')}</th>
+                <th>Services</th>
+                <th>Mix</th>
+                <th className="sortable" onClick={() => toggleSort('started')}>Started{arrow('started')}</th>
+                <th className="sortable" onClick={() => toggleSort('monthly')}>Monthly / Projects{arrow('monthly')}</th>
+                <th className="sortable" onClick={() => toggleSort('ltv')}>LTV{arrow('ltv')}</th>
+                <th className="sortable" onClick={() => toggleSort('avg')}>Avg / mo{arrow('avg')}</th>
+                <th className="sortable" onClick={() => toggleSort('status')}>Status{arrow('status')}</th>
+                <th className="sortable" onClick={() => toggleSort('notes')}>Notes{arrow('notes')}</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
-              {filtered.map((c) => {
+              {sorted.map((c) => {
                 const svcs = c.services || []
                 const kind = clientKind(c)
                 const mrr = clientMRR(c)
@@ -125,6 +166,9 @@ export default function Clients({ clients, updateClient, deleteClient, deleteCli
                       </div>
                     </td>
                     <td><span className={`badge ${KIND_CLASS[kind]}`}>{KIND_LABEL[kind]}</span></td>
+                    <td style={{ color: 'var(--muted)', whiteSpace: 'nowrap' }} title={firstJob[c.id] ? 'First job' : 'Added'}>
+                      {startOf(c) ? fmtDate(startOf(c), { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}
+                    </td>
                     <td className="money">
                       {mrr > 0 && <span>{money(mrr)}<span style={{ color: 'var(--muted)', fontWeight: 400 }}>/mo</span></span>}
                       {mrr > 0 && won > 0 && <br />}
@@ -132,13 +176,14 @@ export default function Clients({ clients, updateClient, deleteClient, deleteCli
                       {mrr === 0 && won === 0 && <span style={{ color: 'var(--muted)', fontWeight: 400 }}>{money((c.services || []).reduce((a, s) => a + Number(s.amount || 0), 0))} quoted</span>}
                     </td>
                     <td className="money" title="Lifetime value from completed jobs">{ltv[c.id] ? money(ltv[c.id]) : <span style={{ color: 'var(--muted)', fontWeight: 400 }}>—</span>}</td>
+                    <td className="money" title="Average revenue per month since first job">{avgMo(c) ? <span>{money(avgMo(c))}<span style={{ color: 'var(--muted)', fontWeight: 400 }}>/mo</span></span> : <span style={{ color: 'var(--muted)', fontWeight: 400 }}>—</span>}</td>
                     <td><StatusBadge status={c.status} /></td>
                     <td style={{ color: 'var(--muted)' }}>{(c.notes?.length || 0) > 0 ? `${c.notes.length}` : '—'}</td>
                     <td style={{ color: 'var(--muted)' }}><Icon.external style={{ width: 15, height: 15 }} /></td>
                   </tr>
                 )
               })}
-              {filtered.length === 0 && <tr><td colSpan={9} className="empty">No clients match.</td></tr>}
+              {sorted.length === 0 && <tr><td colSpan={11} className="empty">No clients match.</td></tr>}
             </tbody>
           </table>
         </div>

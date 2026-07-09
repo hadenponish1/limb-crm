@@ -136,6 +136,8 @@ input, select, textarea { font-family: inherit; font-size: 14px; }
 .tbl td { padding: 13px 14px; border-bottom: 1px solid var(--line); font-size: 13.5px; vertical-align: middle; }
 .tbl tr:last-child td { border-bottom: none; }
 .tbl tr.click:hover td { background: var(--paper); cursor: pointer; }
+.tbl th.sortable { cursor: pointer; user-select: none; white-space: nowrap; }
+.tbl th.sortable:hover { color: var(--moss); }
 
 .avatar {
   width: 34px; height: 34px; border-radius: 9px; flex-shrink: 0;
