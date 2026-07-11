@@ -5,7 +5,7 @@ import MonthCalendar from '../components/MonthCalendar'
 import JobModal from '../components/JobModal'
 import DayPanel from '../components/DayPanel'
 import { money, dayParts, fmtTime, fmtDate } from '../lib/format'
-import { googleCalendarUrl, downloadICS } from '../lib/calendar'
+import { googleCalendarUrl, downloadICS, downloadBulkICS, upcomingCount } from '../lib/calendar'
 
 export default function Schedule(store) {
   const { clients, jobs, addJob, deleteJob, updateJob, upsertService, generateSeries, previewRecurring, generateRecurring, onOpenClient } = store
@@ -13,6 +13,7 @@ export default function Schedule(store) {
   const [addOpen, setAddOpen] = useState(false)
   const [addDate, setAddDate] = useState(null)
   const [genOpen, setGenOpen] = useState(false)
+  const [syncOpen, setSyncOpen] = useState(false)
   const [detail, setDetail] = useState(null)
   const [dayPanel, setDayPanel] = useState(null) // ISO date | null
   const byId = Object.fromEntries(clients.map((c) => [c.id, c]))
@@ -36,6 +37,7 @@ export default function Schedule(store) {
             </button>
           </div>
           <button className="btn btn-ghost" onClick={() => setGenOpen(true)}><Icon.repeat /> Auto-fill recurring</button>
+          <button className="btn btn-ghost" onClick={() => setSyncOpen(true)}><Icon.calendar /> Sync to Google</button>
           <button className="btn btn-primary" onClick={() => openAdd()}><Icon.plus /> Schedule job</button>
         </div>
       </div>
@@ -52,6 +54,7 @@ export default function Schedule(store) {
       )}
       {addOpen && <JobModal clients={clients} initialDate={addDate} onClose={() => setAddOpen(false)} addJob={addJob} upsertService={upsertService} generateSeries={generateSeries} />}
       {genOpen && <GenerateModal previewRecurring={previewRecurring} generateRecurring={generateRecurring} onClose={() => setGenOpen(false)} />}
+      {syncOpen && <SyncModal jobs={jobs} clients={clients} onClose={() => setSyncOpen(false)} />}
       {detail && <JobDetail job={detail} client={byId[detail.clientId]} updateJob={updateJob} onOpenClient={onOpenClient} onClose={() => setDetail(null)} onDelete={(id) => { deleteJob(id); setDetail(null) }} />}
     </div>
   )
@@ -216,6 +219,43 @@ function GenerateModal({ previewRecurring, generateRecurring, onClose }) {
           ) : (
             <button className="btn btn-primary" onClick={onClose}>Done</button>
           )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function SyncModal({ jobs, clients, onClose }) {
+  const [done, setDone] = useState(0)
+  const count = upcomingCount(jobs)
+  return (
+    <div className="overlay" onClick={onClose}>
+      <div className="modal" style={{ maxWidth: 480 }} onClick={(e) => e.stopPropagation()}>
+        <div className="modal-head">
+          <div>
+            <div className="card-title">Sync to Google Calendar</div>
+            <div className="page-sub">Push your whole upcoming schedule at once</div>
+          </div>
+          <button className="icon-btn" onClick={onClose}><Icon.x /></button>
+        </div>
+        <div className="modal-body">
+          <div style={{ background: '#fff', border: '1px solid var(--line)', borderRadius: 12, padding: '14px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+            <span style={{ fontWeight: 600 }}>Upcoming jobs to sync</span>
+            <span style={{ fontFamily: 'var(--font-serif)', fontSize: 26, fontWeight: 600, color: 'var(--moss)' }}>{count}</span>
+          </div>
+          <ol style={{ margin: '0 0 4px 18px', fontSize: 13.5, lineHeight: 1.9, color: 'var(--ink)' }}>
+            <li>Download the calendar file below.</li>
+            <li>Open <b>Google Calendar</b> (web) → gear ⚙ <b>Settings</b>.</li>
+            <li><b>Import &amp; export</b> → <b>Import</b> → choose the file → pick your calendar → <b>Import</b>.</li>
+          </ol>
+          <div className="page-sub" style={{ marginTop: 10, fontSize: 12.5 }}>Re-importing later updates events instead of duplicating them, so you can run this again anytime you add jobs.</div>
+          {done > 0 && <div style={{ color: '#3f6b3d', fontSize: 13, marginTop: 12, fontWeight: 600 }}>✓ Downloaded {done} event{done !== 1 ? 's' : ''} — now import it in Google Calendar.</div>}
+        </div>
+        <div className="modal-foot">
+          <button className="btn btn-ghost" onClick={onClose}>Close</button>
+          <button className="btn btn-primary" onClick={() => setDone(downloadBulkICS(jobs, clients))} disabled={count === 0}>
+            <Icon.download /> Download {count} event{count !== 1 ? 's' : ''} (.ics)
+          </button>
         </div>
       </div>
     </div>
