@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Icon } from './icons'
 import { isoLocal, SERVICES, freqLabel } from '../lib/store'
 import FrequencyPicker from './FrequencyPicker'
+import ClientSearchSelect from './ClientSearchSelect'
 import { googleCalendarUrl } from '../lib/calendar'
 
 // Shared job scheduler used by both the Schedule calendar and the client drawer.
@@ -101,9 +102,7 @@ export default function JobModal({
           {!lockClientId && (
             <div className="field">
               <label>Client</label>
-              <select value={clientId} onChange={(e) => setClientId(e.target.value)}>
-                {clients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
+              <ClientSearchSelect clients={clients} value={clientId} onChange={setClientId} />
             </div>
           )}
 
