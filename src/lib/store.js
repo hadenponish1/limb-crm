@@ -119,6 +119,7 @@ const cloud = {
   deleteClients: (ids) => supabase.from('clients').delete().in('id', ids).then(({ error }) => error && console.error(error)),
   insertJobs: (jobs) => supabase.from('jobs').insert(jobs.map(jobToRow)).then(({ error }) => error && console.error(error)),
   deleteJob: (id) => supabase.from('jobs').delete().eq('id', id).then(({ error }) => error && console.error(error)),
+  deleteJobs: (ids) => supabase.from('jobs').delete().in('id', ids).then(({ error }) => error && console.error(error)),
   updateJob: (id, patch) => supabase.from('jobs').update(jobPatchToRow(patch)).eq('id', id).then(({ error }) => error && console.error(error)),
 }
 
@@ -260,6 +261,37 @@ export function useStore() {
     return created.length
   }, [])
 
+  // Reflow a recurring service's FUTURE visits to its current cadence: keep past
+  // visits, delete upcoming ones for this service, regenerate on the new frequency.
+  const rescheduleSeries = useCallback((clientId, serviceId, weeks = 8) => {
+    const client = state.clients.find((c) => c.id === clientId)
+    const line = client?.services.find((s) => s.id === serviceId)
+    if (!client || !line) return { removed: 0, added: 0 }
+    const today = new Date(); today.setHours(0, 0, 0, 0)
+    const todayIso = isoLocal(today)
+
+    // future jobs for this service get replaced
+    const removeIds = state.jobs.filter((j) => j.clientId === clientId && j.serviceId === serviceId && j.date >= todayIso).map((j) => j.id)
+    const furthest = state.jobs.filter((j) => j.clientId === clientId && j.serviceId === serviceId).reduce((mx, j) => (j.date > mx ? j.date : mx), todayIso)
+
+    // regenerate horizon covers at least the old furthest visit
+    let horizon = new Date(today); horizon.setDate(horizon.getDate() + weeks * 7)
+    const furthestD = new Date(furthest + 'T00:00:00')
+    if (furthestD > horizon) horizon = furthestD
+
+    const removeSet = new Set(removeIds)
+    const remaining = state.jobs.filter((j) => !removeSet.has(j.id))
+    const existing = new Set(remaining.map(jobKey))
+    const created = []
+    visitsFor(client, line, today, horizon).forEach((v) => {
+      if (!existing.has(jobKey(v))) { created.push({ ...v, id: uid() }); existing.add(jobKey(v)) }
+    })
+    state = { ...state, jobs: [...created, ...remaining] }
+    commit()
+    if (isCloud) { if (removeIds.length) cloud.deleteJobs(removeIds); if (created.length) cloud.insertJobs(created) }
+    return { removed: removeIds.length, added: created.length }
+  }, [])
+
   const bulkImport = useCallback(({ clients: nc = [], jobs: nj = [] }) => {
     state = { ...state, clients: [...nc, ...state.clients], jobs: [...nj, ...state.jobs] }
     commit()
@@ -271,6 +303,6 @@ export function useStore() {
   return {
     ...state, loading, cloud: isCloud,
     addClient, updateClient, deleteClient, deleteClients, addNote, deleteNote, upsertService,
-    addJob, deleteJob, updateJob, generateSeries, previewRecurring, generateRecurring, bulkImport, reset,
+    addJob, deleteJob, updateJob, generateSeries, previewRecurring, generateRecurring, rescheduleSeries, bulkImport, reset,
   }
 }

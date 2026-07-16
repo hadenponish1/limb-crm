@@ -15,7 +15,7 @@ const monthsSince = (iso) => {
 const KIND_LABEL = { recurring: 'Recurring', project: 'Project', mixed: 'Recurring + Project', none: '—' }
 const KIND_CLASS = { recurring: 'recurring', project: 'project', mixed: 'recurring', none: 'lead' }
 
-export default function Clients({ clients, updateClient, deleteClient, deleteClients, addNote, deleteNote, onNew, jobs, addJob, deleteJob, generateSeries, upsertService, bulkImport, focusClientId, onFocusHandled }) {
+export default function Clients({ clients, updateClient, deleteClient, deleteClients, addNote, deleteNote, onNew, jobs, addJob, deleteJob, generateSeries, upsertService, rescheduleSeries, bulkImport, focusClientId, onFocusHandled }) {
   const [filter, setFilter] = useState('all')
   const [q, setQ] = useState('')
   const [sourceFilter, setSourceFilter] = useState('all')
@@ -192,7 +192,7 @@ export default function Clients({ clients, updateClient, deleteClient, deleteCli
       {selected && (
         <ClientDrawer client={selected} onClose={() => setSelectedId(null)}
           updateClient={updateClient} deleteClient={deleteClient} addNote={addNote} deleteNote={deleteNote}
-          jobs={jobs} addJob={addJob} deleteJob={deleteJob} generateSeries={generateSeries} upsertService={upsertService} />
+          jobs={jobs} addJob={addJob} deleteJob={deleteJob} generateSeries={generateSeries} upsertService={upsertService} rescheduleSeries={rescheduleSeries} />
       )}
 
       {showImport && (

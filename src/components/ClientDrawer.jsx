@@ -4,18 +4,20 @@ import { Avatar, StatusBadge, TypeBadge, StageBadge } from './ui'
 import { blankService, FREQUENCIES, isoLocal, SOURCES } from '../lib/store'
 import ServiceLineFields from './ServiceLineFields'
 import JobModal from './JobModal'
+import RescheduleModal from './RescheduleModal'
 import { geocode } from '../lib/geocode'
 import { money, dayParts, fmtTime } from '../lib/format'
 import { clientMRR, clientLTV } from '../lib/metrics'
 import { googleCalendarUrl } from '../lib/calendar'
 
-export default function ClientDrawer({ client, onClose, updateClient, deleteClient, addNote, deleteNote, jobs, addJob, deleteJob, generateSeries, upsertService }) {
+export default function ClientDrawer({ client, onClose, updateClient, deleteClient, addNote, deleteNote, jobs, addJob, deleteJob, generateSeries, upsertService, rescheduleSeries }) {
   const [f, setF] = useState(client)
   const [dirty, setDirty] = useState(false)
   const [note, setNote] = useState('')
   const [saving, setSaving] = useState(false)
   const [openLine, setOpenLine] = useState(null)
   const [sched, setSched] = useState(null) // { jobType, serviceId } | null
+  const [resched, setResched] = useState(null) // serviceId | null
 
   useEffect(() => { setF(client); setDirty(false); setOpenLine(null) }, [client.id])
   // Keep the form synced with the store whenever there are no pending local edits
@@ -55,6 +57,7 @@ export default function ClientDrawer({ client, onClose, updateClient, deleteClie
 
   function openScheduler(opts) { commit(); setSched(opts || {}) }
   function closeScheduler() { setDirty(false); setSched(null) }
+  function openReschedule(serviceId) { commit(); setResched(serviceId) }
 
   function submitNote(e) {
     e.preventDefault()
@@ -132,11 +135,16 @@ export default function ClientDrawer({ client, onClose, updateClient, deleteClie
                   {open && (
                     <div className="svc-body">
                       <ServiceLineFields line={s} onChange={(next) => updateLine(s.id, next)} />
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                         <button className="btn btn-primary btn-sm" onClick={() => openScheduler({ serviceId: s.id, jobType: s.type === 'recurring' ? 'recurring' : 'oneoff' })}>
-                          <Icon.calendar /> Schedule{lineJobs ? ` (${lineJobs} on calendar)` : ''}
+                          <Icon.calendar /> Schedule{lineJobs ? ` (${lineJobs})` : ''}
                         </button>
-                        <button className="btn btn-ghost btn-sm" style={{ color: 'var(--danger)' }} onClick={() => removeLine(s.id)}><Icon.trash /> Remove</button>
+                        {s.type === 'recurring' && rescheduleSeries && (
+                          <button className="btn btn-ghost btn-sm" onClick={() => openReschedule(s.id)} title="Replace upcoming visits with the current cadence">
+                            <Icon.repeat /> Reschedule
+                          </button>
+                        )}
+                        <button className="btn btn-ghost btn-sm" style={{ color: 'var(--danger)', marginLeft: 'auto' }} onClick={() => removeLine(s.id)}><Icon.trash /> Remove</button>
                       </div>
                     </div>
                   )}
@@ -212,6 +220,10 @@ export default function ClientDrawer({ client, onClose, updateClient, deleteClie
           initialServiceId={sched.serviceId} initialJobType={sched.jobType}
           onClose={closeScheduler} addJob={addJob} upsertService={upsertService} generateSeries={generateSeries}
         />
+      )}
+
+      {resched && (
+        <RescheduleModal client={client} serviceId={resched} jobs={jobs} reschedule={rescheduleSeries} onClose={() => { setDirty(false); setResched(null) }} />
       )}
     </div>
   )
