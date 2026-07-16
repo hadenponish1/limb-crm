@@ -1,13 +1,13 @@
 import { useState } from 'react'
 import { Icon } from './icons'
-import { FREQUENCIES, isoLocal } from '../lib/store'
+import { freqLabel, isoLocal } from '../lib/store'
 
 // Reflow a recurring service's upcoming visits to its current cadence.
 export default function RescheduleModal({ client, serviceId, jobs, reschedule, onClose }) {
   const [weeks, setWeeks] = useState(8)
   const [result, setResult] = useState(null)
   const line = (client.services || []).find((s) => s.id === serviceId)
-  const freq = FREQUENCIES.find((f) => f.id === line?.frequency)?.label || line?.frequency
+  const freq = line ? freqLabel(line.frequency) : ''
   const todayIso = isoLocal(new Date())
   const future = (jobs || []).filter((j) => j.clientId === client.id && j.serviceId === serviceId && j.date >= todayIso)
 

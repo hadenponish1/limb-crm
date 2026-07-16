@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { Icon } from './icons'
-import { isoLocal, SERVICES, FREQUENCIES } from '../lib/store'
+import { isoLocal, SERVICES, freqLabel } from '../lib/store'
+import FrequencyPicker from './FrequencyPicker'
 import { googleCalendarUrl } from '../lib/calendar'
 
 // Shared job scheduler used by both the Schedule calendar and the client drawer.
@@ -19,7 +20,7 @@ export default function JobModal({
 
   const [serviceSel, setServiceSel] = useState(initialServiceId || matching[0]?.id || '__new__')
   const [svcName, setSvcName] = useState(SERVICES[0])
-  const [freq, setFreq] = useState('weekly')
+  const [freq, setFreq] = useState({ every: 1, unit: 'week' })
   const [time, setTime] = useState('08:00')
   const [duration, setDuration] = useState(60)
   const [amount, setAmount] = useState('')
@@ -43,7 +44,7 @@ export default function JobModal({
     if (!line) return
     setSvcName(line.service)
     setAmount(String(line.amount ?? ''))
-    if (line.type === 'recurring') { setFreq(line.frequency || 'weekly'); setTime(line.time || '08:00'); setDuration(line.duration || 60) }
+    if (line.type === 'recurring') { setFreq(line.frequency || { every: 1, unit: 'week' }); setTime(line.time || '08:00'); setDuration(line.duration || 60) }
   }, [serviceSel])
 
   function submit(e) {
@@ -78,7 +79,7 @@ export default function JobModal({
               <Icon.repeat style={{ width: 26, height: 26, color: '#3f6b3d' }} />
             </div>
             <div className="card-title">{result.n} visit{result.n !== 1 ? 's' : ''} added</div>
-            <div className="page-sub" style={{ marginTop: 6 }}>{svcName} · {FREQUENCIES.find((x) => x.id === freq)?.label.toLowerCase()} for {client?.name}. Open each from the calendar to push to Google.</div>
+            <div className="page-sub" style={{ marginTop: 6 }}>{svcName} · {freqLabel(freq).toLowerCase()} for {client?.name}. Open each from the calendar to push to Google.</div>
           </div>
           <div className="modal-foot"><button className="btn btn-primary" onClick={onClose}>Done</button></div>
         </div>
@@ -124,7 +125,7 @@ export default function JobModal({
           <div className="field">
             <label>Service</label>
             <select value={serviceSel} onChange={(e) => setServiceSel(e.target.value)}>
-              {matching.map((s) => <option key={s.id} value={s.id}>{s.service}{s.type === 'recurring' ? ` · ${FREQUENCIES.find((x) => x.id === s.frequency)?.label.toLowerCase()}` : ''}</option>)}
+              {matching.map((s) => <option key={s.id} value={s.id}>{s.service}{s.type === 'recurring' ? ` · ${freqLabel(s.frequency).toLowerCase()}` : ''}</option>)}
               <option value="__new__">➕ New {jobType === 'recurring' ? 'recurring' : 'one-off'} service…</option>
             </select>
           </div>
@@ -141,7 +142,7 @@ export default function JobModal({
               <div className="field-row">
                 <div className="field"><label>Price / visit</label><input type="number" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0" required /></div>
                 <div className="field"><label>Frequency</label>
-                  <select value={freq} onChange={(e) => setFreq(e.target.value)}>{FREQUENCIES.map((x) => <option key={x.id} value={x.id}>{x.label}</option>)}</select>
+                  <FrequencyPicker value={freq} onChange={setFreq} />
                 </div>
               </div>
               <div className="field-row">

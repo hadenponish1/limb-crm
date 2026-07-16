@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Icon } from './icons'
 import { Avatar, StatusBadge, TypeBadge, StageBadge } from './ui'
-import { blankService, FREQUENCIES, isoLocal, SOURCES } from '../lib/store'
+import { blankService, freqLabel, isoLocal, SOURCES } from '../lib/store'
 import ServiceLineFields from './ServiceLineFields'
 import JobModal from './JobModal'
 import RescheduleModal from './RescheduleModal'
@@ -117,7 +117,7 @@ export default function ClientDrawer({ client, onClose, updateClient, deleteClie
           <div className="stack" style={{ gap: 10 }}>
             {(f.services || []).map((s) => {
               const open = openLine === s.id
-              const freq = FREQUENCIES.find((x) => x.id === s.frequency)?.label
+              const freq = freqLabel(s.frequency)
               const lineJobs = clientJobs.filter((j) => j.serviceId === s.id).length
               return (
                 <div className="svc-card" key={s.id}>

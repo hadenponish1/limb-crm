@@ -4,11 +4,10 @@ import { Kpi } from '../components/ui'
 import RevenueCalendar from '../components/RevenueCalendar'
 import DayPanel from '../components/DayPanel'
 import { money } from '../lib/format'
-import { FREQUENCIES } from '../lib/store'
+import { freqLabel } from '../lib/store'
 import { monthlyRecurring, projectRevenue, counts, byService, revenueTimeline, maintenanceReport } from '../lib/metrics'
 
 const PIE = ['#6B7F65', '#c99a4b']
-const freqLabel = (id) => FREQUENCIES.find((f) => f.id === id)?.label || id
 
 export default function Metrics({ clients, jobs, onOpenClient, scrollTo, onScrolled }) {
   const [dayPanel, setDayPanel] = useState(null)

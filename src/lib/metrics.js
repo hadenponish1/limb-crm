@@ -1,6 +1,4 @@
-import { FREQUENCIES } from './store'
-
-const perMonth = (freq) => FREQUENCIES.find((f) => f.id === freq)?.perMonth || 1
+import { freqPerMonth as perMonth } from './store'
 
 // ---- Per-client derivations ----
 export const recurringLines = (c) => (c.services || []).filter((s) => s.type === 'recurring')

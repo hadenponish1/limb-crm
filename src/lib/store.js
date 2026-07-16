@@ -16,11 +16,35 @@ export const SERVICES = [
   'Sod / Lawn Install',
 ]
 
-export const FREQUENCIES = [
-  { id: 'weekly', label: 'Weekly', perMonth: 4, stepDays: 7 },
-  { id: 'biweekly', label: 'Bi-weekly', perMonth: 2, stepDays: 14 },
-  { id: 'monthly', label: 'Monthly', perMonth: 1, stepDays: null },
+// Recurring cadence is stored as { every: N, unit: 'week' | 'month' }.
+// Legacy string values ('weekly' | 'biweekly' | 'monthly') are still accepted.
+export const FREQ_PRESETS = [
+  { every: 1, unit: 'week', label: 'Weekly' },
+  { every: 2, unit: 'week', label: 'Bi-weekly' },
+  { every: 3, unit: 'week', label: 'Every 3 weeks' },
+  { every: 1, unit: 'month', label: 'Monthly' },
+  { every: 2, unit: 'month', label: 'Every 2 months' },
+  { every: 3, unit: 'month', label: 'Quarterly' },
+  { every: 6, unit: 'month', label: 'Every 6 months' },
 ]
+const FREQ_LEGACY = { weekly: { every: 1, unit: 'week' }, biweekly: { every: 2, unit: 'week' }, monthly: { every: 1, unit: 'month' } }
+
+export function normFreq(frequency) {
+  if (!frequency) return { every: 1, unit: 'week' }
+  if (typeof frequency === 'string') return FREQ_LEGACY[frequency] || { every: 1, unit: 'week' }
+  return { every: Math.max(1, Math.round(Number(frequency.every) || 1)), unit: frequency.unit === 'month' ? 'month' : 'week' }
+}
+// Visits per month for MRR (treats a month as 4 weeks, matching the whole-visit convention:
+// weekly = 4, bi-weekly = 2, every-3-weeks ≈ 1.33, monthly = 1, quarterly ≈ 0.33).
+export function freqPerMonth(frequency) {
+  const { every, unit } = normFreq(frequency)
+  return unit === 'week' ? 4 / every : 1 / every
+}
+export function freqLabel(frequency) {
+  const { every, unit } = normFreq(frequency)
+  const p = FREQ_PRESETS.find((x) => x.every === every && x.unit === unit)
+  return p ? p.label : `Every ${every} ${unit}${every > 1 ? 's' : ''}`
+}
 
 // Where a client/lead came from
 export const SOURCES = ['TaskRabbit', 'Referral', 'Repeat client', 'Website', 'Direct', 'Other']
@@ -38,7 +62,7 @@ export function newId(prefix) {
 const uid = () => (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : newId('u'))
 
 export function blankService(overrides = {}) {
-  return { id: newId('s'), service: SERVICES[0], type: 'recurring', frequency: 'weekly', amount: 0, time: '08:00', duration: 60, stage: 'won', ...overrides }
+  return { id: newId('s'), service: SERVICES[0], type: 'recurring', frequency: { every: 1, unit: 'week' }, amount: 0, time: '08:00', duration: 60, stage: 'won', ...overrides }
 }
 
 // ---- Seed data (local/demo mode only) ----
@@ -125,11 +149,10 @@ const cloud = {
 
 function visitsFor(client, line, today, horizon, startISO) {
   const out = []
-  const freq = FREQUENCIES.find((f) => f.id === line.frequency)
-  if (!freq) return out
+  const { every, unit } = normFreq(line.frequency)
   let d = new Date((startISO || line.startDate || client.createdAt || isoLocal(today)) + 'T00:00:00')
   d.setHours(0, 0, 0, 0)
-  const advance = () => { if (freq.stepDays) d.setDate(d.getDate() + freq.stepDays); else d.setMonth(d.getMonth() + 1) }
+  const advance = () => { if (unit === 'week') d.setDate(d.getDate() + 7 * every); else d.setMonth(d.getMonth() + every) }
   let guard = 0
   while (d < today && guard++ < 5000) advance()
   guard = 0

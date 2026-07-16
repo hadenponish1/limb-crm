@@ -1,5 +1,6 @@
 import { Icon } from './icons'
-import { SERVICES, FREQUENCIES } from '../lib/store'
+import { SERVICES } from '../lib/store'
+import FrequencyPicker from './FrequencyPicker'
 
 // Editor for a single service line. `line` is the object; `onChange(next)` patches it.
 export default function ServiceLineFields({ line, onChange }) {
@@ -16,7 +17,7 @@ export default function ServiceLineFields({ line, onChange }) {
         <label>Type</label>
         <div className="seg">
           <button type="button" className={line.type === 'recurring' ? 'on' : ''}
-            onClick={() => onChange({ ...line, type: 'recurring', frequency: line.frequency || 'weekly' })}>
+            onClick={() => onChange({ ...line, type: 'recurring', frequency: line.frequency || { every: 1, unit: 'week' } })}>
             <Icon.repeat style={{ width: 14, height: 14, verticalAlign: '-2px', marginRight: 6 }} />Recurring
           </button>
           <button type="button" className={line.type === 'project' ? 'on' : ''}
@@ -33,9 +34,7 @@ export default function ServiceLineFields({ line, onChange }) {
         {line.type === 'recurring' ? (
           <div className="field">
             <label>Frequency</label>
-            <select value={line.frequency || 'weekly'} onChange={(e) => set('frequency', e.target.value)}>
-              {FREQUENCIES.map((f) => <option key={f.id} value={f.id}>{f.label}</option>)}
-            </select>
+            <FrequencyPicker value={line.frequency} onChange={(f) => set('frequency', f)} />
           </div>
         ) : (
           <div className="field">
