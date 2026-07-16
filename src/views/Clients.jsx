@@ -3,6 +3,7 @@ import { Icon } from '../components/icons'
 import { StatusBadge, Avatar, SourceBadge } from '../components/ui'
 import ClientDrawer from '../components/ClientDrawer'
 import ImportModal from '../components/ImportModal'
+import MergeModal from '../components/MergeModal'
 import { money, fmtDate } from '../lib/format'
 import { recurringLines, projectLines, clientMRR, clientWonProjects, clientKind, ltvByClient } from '../lib/metrics'
 
@@ -15,13 +16,14 @@ const monthsSince = (iso) => {
 const KIND_LABEL = { recurring: 'Recurring', project: 'Project', mixed: 'Recurring + Project', none: '—' }
 const KIND_CLASS = { recurring: 'recurring', project: 'project', mixed: 'recurring', none: 'lead' }
 
-export default function Clients({ clients, updateClient, deleteClient, deleteClients, addNote, deleteNote, onNew, jobs, addJob, deleteJob, generateSeries, upsertService, rescheduleSeries, bulkImport, focusClientId, onFocusHandled }) {
+export default function Clients({ clients, updateClient, deleteClient, deleteClients, mergeClients, addNote, deleteNote, onNew, jobs, addJob, deleteJob, generateSeries, upsertService, rescheduleSeries, bulkImport, focusClientId, onFocusHandled }) {
   const [filter, setFilter] = useState('all')
   const [q, setQ] = useState('')
   const [sourceFilter, setSourceFilter] = useState('all')
   const [selectedId, setSelectedId] = useState(null)
   const [checked, setChecked] = useState(() => new Set())
   const [showImport, setShowImport] = useState(false)
+  const [showMerge, setShowMerge] = useState(false)
 
   // open a specific client's drawer when navigated here from another view
   useEffect(() => {
@@ -114,6 +116,7 @@ export default function Clients({ clients, updateClient, deleteClient, deleteCli
               <span><b>{checked.size}</b> selected</span>
               <div style={{ display: 'flex', gap: 8 }}>
                 <button className="btn btn-ghost btn-sm" onClick={clearChecked}>Clear</button>
+                {checked.size >= 2 && <button className="btn btn-ghost btn-sm" onClick={() => setShowMerge(true)}><Icon.users /> Merge</button>}
                 <button className="btn btn-sm" style={{ background: 'var(--danger)', color: '#fff' }} onClick={bulkDelete}><Icon.trash /> Delete {checked.size}</button>
               </div>
             </div>
@@ -198,6 +201,12 @@ export default function Clients({ clients, updateClient, deleteClient, deleteCli
       {showImport && (
         <ImportModal existingClients={clients} onClose={() => setShowImport(false)}
           onImport={({ clients: nc, jobs: nj }) => bulkImport({ clients: nc, jobs: nj })} />
+      )}
+
+      {showMerge && (
+        <MergeModal clients={clients.filter((c) => checked.has(c.id))} jobs={jobs}
+          onMerge={(primaryId, otherIds) => { mergeClients(primaryId, otherIds); clearChecked() }}
+          onClose={() => setShowMerge(false)} />
       )}
     </div>
   )

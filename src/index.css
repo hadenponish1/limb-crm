@@ -209,6 +209,9 @@ input, select, textarea { font-family: inherit; font-size: 14px; }
 .combo-sub { font-size: 11.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .combo-empty { padding: 12px; color: var(--muted); font-size: 13px; text-align: center; }
 
+.merge-row { display: flex; align-items: center; gap: 11px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: #fff; cursor: pointer; }
+.merge-row.on { border-color: var(--green); box-shadow: 0 0 0 1px var(--green); background: #eef3ea; }
+
 .icon-btn { width: 32px; height: 32px; border-radius: 8px; display: grid; place-items: center; color: var(--muted); }
 .icon-btn:hover { background: var(--cream); color: var(--moss); }
 

@@ -200,6 +200,37 @@ export function useStore() {
     commit(); if (isCloud) cloud.deleteClients(ids)
   }, [])
 
+  // Merge duplicate clients: move all jobs/services/notes onto `primaryId`, then
+  // delete the others. Fills blank primary fields from the others.
+  const mergeClients = useCallback((primaryId, otherIds) => {
+    const otherSet = new Set(otherIds)
+    const primary = state.clients.find((c) => c.id === primaryId)
+    if (!primary) return { jobs: 0, removed: 0 }
+    const others = state.clients.filter((c) => otherSet.has(c.id))
+    const reassignIds = state.jobs.filter((j) => otherSet.has(j.clientId)).map((j) => j.id)
+
+    const merged = { ...primary }
+    ;['contact', 'email', 'phone', 'address', 'source'].forEach((k) => { if (!merged[k]) { const s = others.find((o) => o[k]); if (s) merged[k] = s[k] } })
+    if (merged.lat == null) { const s = others.find((o) => o.lat != null); if (s) { merged.lat = s.lat; merged.lng = s.lng } }
+    merged.services = [...(primary.services || []), ...others.flatMap((o) => o.services || [])]
+    merged.notes = [...(primary.notes || []), ...others.flatMap((o) => o.notes || [])].sort((a, b) => (b.at || '').localeCompare(a.at || ''))
+
+    state = {
+      clients: state.clients.filter((c) => c.id === primaryId || !otherSet.has(c.id)).map((c) => (c.id === primaryId ? merged : c)),
+      jobs: state.jobs.map((j) => (otherSet.has(j.clientId) ? { ...j, clientId: primaryId } : j)),
+    }
+    commit()
+    if (isCloud) {
+      (async () => {
+        // reassign jobs BEFORE deleting the old clients, or the FK cascade would take them
+        for (const id of reassignIds) { const { error } = await supabase.from('jobs').update({ client_id: primaryId }).eq('id', id); if (error) console.error(error) }
+        await supabase.from('clients').update(clientToRow(merged)).eq('id', primaryId)
+        await supabase.from('clients').delete().in('id', otherIds)
+      })()
+    }
+    return { jobs: reassignIds.length, removed: otherIds.length }
+  }, [])
+
   const addNote = useCallback((clientId, text) => {
     const note = { id: newId('n'), text, at: new Date().toISOString() }
     state = { ...state, clients: state.clients.map((c) => (c.id === clientId ? { ...c, notes: [note, ...(c.notes || [])] } : c)) }
@@ -325,7 +356,7 @@ export function useStore() {
 
   return {
     ...state, loading, cloud: isCloud,
-    addClient, updateClient, deleteClient, deleteClients, addNote, deleteNote, upsertService,
+    addClient, updateClient, deleteClient, deleteClients, mergeClients, addNote, deleteNote, upsertService,
     addJob, deleteJob, updateJob, generateSeries, previewRecurring, generateRecurring, rescheduleSeries, bulkImport, reset,
   }
 }
