@@ -86,7 +86,7 @@ export default function App() {
             <div className="page-title">{title}</div>
             <div className="page-sub">{sub}</div>
           </div>
-          <button className="btn btn-primary" onClick={() => setShowLead(true)}><Icon.plus /> New lead</button>
+          <button className="btn btn-primary new-lead-btn" onClick={() => setShowLead(true)}><Icon.plus /> <span>New lead</span></button>
         </div>
 
         <div className="content">
@@ -103,6 +103,18 @@ export default function App() {
           )}
         </div>
       </main>
+
+      {/* Mobile-only bottom tab bar (hidden on desktop via CSS) */}
+      <nav className="bottom-nav">
+        {NAV.map((n) => {
+          const I = Icon[n.icon]
+          return (
+            <button key={n.id} className={`bnav-item ${tab === n.id ? 'active' : ''}`} onClick={() => setTab(n.id)}>
+              <I /> <span>{n.id === 'clients' ? 'Clients' : n.label}</span>
+            </button>
+          )
+        })}
+      </nav>
 
       {showLead && <LeadModal onClose={() => setShowLead(false)} onSave={store.addClient} />}
       <AutoGeocoder clients={store.clients} updateClient={store.updateClient} enabled={!store.loading} />

@@ -27,7 +27,7 @@ export default function Schedule(store) {
           <div className="card-title">Job schedule</div>
           <div className="page-sub">Pick a client and service — recurring visits auto-fill, one-offs drop a single job.</div>
         </div>
-        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
           <div className="seg" style={{ background: '#fff', borderRadius: 10, padding: 3, border: '1px solid var(--line)' }}>
             <button className={view === 'calendar' ? 'on' : ''} onClick={() => setView('calendar')} style={{ border: 'none', padding: '7px 14px' }}>
               <Icon.calendar style={{ width: 15, height: 15, verticalAlign: '-3px', marginRight: 6 }} />Calendar

@@ -52,7 +52,7 @@ export default function Metrics({ clients, jobs, onOpenClient, scrollTo, onScrol
             <span style={{ fontSize: 13, color: 'var(--muted)' }}>{c.recurringClients} client{c.recurringClients !== 1 ? 's' : ''} · <b style={{ color: 'var(--green)' }}>{money(mrr)}/mo</b> · {money(mrr * 12)}/yr</span>
           </div>
         </div>
-        <div style={{ padding: '0 12px 12px' }}>
+        <div style={{ padding: '0 12px 12px', overflowX: 'auto' }}>
           <table className="tbl">
             <thead><tr><th>Client</th><th>Service</th><th>Frequency</th><th>Price / visit</th><th style={{ textAlign: 'right' }}>Monthly</th></tr></thead>
             <tbody>

@@ -91,7 +91,7 @@ export default function MonthCalendar({ jobs, byId, onDayClick, onJobClick, init
           </div>
         </>
       ) : (
-        <div className="week-grid">
+        <div className="cal-scroll"><div className="week-grid">
           {cells.map((d, i) => {
             const iso = isoLocal(d)
             const list = byDate[iso] || []
@@ -116,7 +116,7 @@ export default function MonthCalendar({ jobs, byId, onDayClick, onJobClick, init
               </div>
             )
           })}
-        </div>
+        </div></div>
       )}
 
       <div className="legend" style={{ marginTop: 16 }}>

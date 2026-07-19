@@ -399,3 +399,73 @@ input, select, textarea { font-family: inherit; font-size: 14px; }
   .two-col { grid-template-columns: 1fr; }
   .cal-cell { min-height: 78px; }
 }
+
+/* ---------- Mobile bottom tab bar (hidden on desktop) ---------- */
+.bottom-nav { display: none; }
+
+@media (max-width: 760px) {
+  /* Swap the fixed side rail for a bottom tab bar */
+  .sidebar { display: none; }
+  .app { display: block; }
+  .main { min-height: 100vh; }
+
+  /* Compact, sticky topbar */
+  .topbar { padding: 14px 16px; }
+  .page-title { font-size: 20px; }
+  .page-sub { font-size: 12px; display: none; } /* reclaim vertical space */
+  .content { padding: 16px 14px calc(76px + env(safe-area-inset-bottom)); }
+
+  /* "New lead" collapses to a compact + button */
+  .new-lead-btn { padding: 9px 11px; }
+  .new-lead-btn span { display: none; }
+  .new-lead-btn svg { margin: 0; }
+
+  /* Grids stack */
+  .kpi-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .grid { gap: 12px; }
+  .card-pad { padding: 16px; }
+
+  /* Tables scroll sideways inside their wrapper instead of crushing */
+  .tbl { min-width: 560px; }
+
+  /* Revenue calendar (7 days + week column) scrolls instead of blowing out width */
+  .rev-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 0 -2px; }
+  .rev-scroll .rev-inner { min-width: 620px; }
+
+  /* Week calendar scrolls horizontally; month cells tighten up */
+  .cal-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 0 -2px; }
+  .cal-scroll .week-grid { min-width: 680px; }
+  .cal-cell { min-height: 64px; }
+
+  /* Calendar header wraps so the Today button never clips off-screen */
+  .cal-head { flex-direction: column; align-items: stretch; gap: 10px; }
+  .cal-head > div { flex-wrap: wrap; justify-content: center; row-gap: 8px; }
+  .cal-head .card-title { min-width: 0 !important; flex: 1; }
+
+  /* Modals become bottom sheets; drawers go full-width */
+  .overlay { padding: 0; align-items: flex-end; }
+  .modal { max-width: 100%; border-radius: 18px 18px 0 0; max-height: 94vh; }
+  .drawer { width: 100vw; max-width: 100vw; }
+  .drawer.day { width: 100vw; }
+
+  /* The bottom tab bar itself */
+  .bottom-nav {
+    display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 80;
+    background: var(--moss); border-top: 1px solid rgba(255,255,255,.08);
+    padding-bottom: env(safe-area-inset-bottom);
+    box-shadow: 0 -2px 16px rgba(27,42,28,.18);
+  }
+  .bnav-item {
+    flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px;
+    padding: 9px 2px 8px; color: var(--sage); font-size: 10.5px; font-weight: 600;
+    background: none; border: none; min-width: 0;
+  }
+  .bnav-item svg { width: 21px; height: 21px; }
+  .bnav-item span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .bnav-item.active { color: var(--cream); }
+  .bnav-item.active svg { color: var(--sage-soft); }
+}
+
+@media (max-width: 380px) {
+  .kpi-grid { grid-template-columns: 1fr; }
+}

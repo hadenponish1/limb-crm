@@ -50,6 +50,7 @@ export default function RevenueCalendar({ jobs, onDayClick }) {
         </div>
       </div>
 
+      <div className="rev-scroll"><div className="rev-inner">
       <div className="rev-grid rev-head">
         {WEEKDAYS.map((w) => <div key={w} className="rev-dow">{w}</div>)}
         <div className="rev-dow" style={{ textAlign: 'right', color: 'var(--green)' }}>Week</div>
@@ -77,6 +78,7 @@ export default function RevenueCalendar({ jobs, onDayClick }) {
           </div>
         )
       })}
+      </div></div>
     </div>
   )
 }

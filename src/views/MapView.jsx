@@ -17,6 +17,20 @@ function FitBounds({ points }) {
   return null
 }
 
+// Leaflet measures the container once at init; if it isn't at its final size yet
+// (mobile layout shift, tab mount) tiles only cover that first area. Recompute
+// after layout settles and on any container resize so the map always fills.
+function AutoResize() {
+  const map = useMap()
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => map.invalidateSize())
+    const ro = new ResizeObserver(() => map.invalidateSize())
+    ro.observe(map.getContainer())
+    return () => { cancelAnimationFrame(raf); ro.disconnect() }
+  }, [map])
+  return null
+}
+
 export default function MapView({ clients }) {
   const pts = clients.filter((c) => c.lat && c.lng)
   const center = pts.length ? [pts[0].lat, pts[0].lng] : [40.68, -79.95]
@@ -44,6 +58,7 @@ export default function MapView({ clients }) {
             attribution='&copy; OpenStreetMap'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
+          <AutoResize />
           <FitBounds points={pts} />
           {pts.map((c) => {
             const mrr = clientMRR(c)
