@@ -61,7 +61,11 @@ function normDate(s) {
 }
 
 function parseAmount(s) { return Number(String(s || '').replace(/[$,\s]/g, '')) || 0 }
-export const normAddr = (a) => (a || '').toLowerCase().replace(/,?\s*usa\s*$/i, '').replace(/\s+/g, ' ').trim()
+// Keep in lockstep with limb_norm_addr() in supabase/ingest-lead-function.sql:
+// lowercase, drop trailing ", USA", strip commas/periods/backslashes (.ics escapes),
+// collapse whitespace, trim — so the app and the ingest RPC dedupe identically.
+export const normAddr = (a) =>
+  (a || '').toLowerCase().replace(/,?\s*usa\s*$/i, '').replace(/[,.\\]/g, '').replace(/\s+/g, ' ').trim()
 
 function deriveName(title) {
   const m = String(title || '').split(/\s[-–—]\s/)

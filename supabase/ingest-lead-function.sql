@@ -5,6 +5,29 @@
 -- Call it from n8n via POST https://<project>.supabase.co/rest/v1/rpc/ingest_lead
 -- with a JSON body of the p_* params below (see notes at bottom).
 
+-- Shared address normalizer so the ingest match and the app agree byte-for-byte.
+-- Mirrors normAddr() in src/lib/importParse.js. IMMUTABLE so it can back an index.
+--   1. lowercase
+--   2. drop a trailing ", USA" / " USA"
+--   3. strip commas, periods, and backslashes (.ics escapes commas as "\,")
+--   4. collapse any whitespace run (incl. .ics line-fold newlines) to one space
+--   5. trim  <-- this is what the old inline version was missing: a trailing
+--            newline in the .ics LOCATION survived as a space and dodged the
+--            duplicate check, so the same property came in as two clients.
+create or replace function limb_norm_addr(p_address text)
+returns text
+language sql
+immutable
+as $$
+  select btrim(
+    regexp_replace(
+      regexp_replace(
+        regexp_replace(lower(coalesce(p_address, '')), ',?\s*usa\s*$', '', 'i'),
+        '[,.\\]', '', 'g'),
+      '\s+', ' ', 'g')
+  );
+$$;
+
 create or replace function ingest_lead(
   p_user_id uuid,
   p_address text,
@@ -25,8 +48,7 @@ as $$
 declare
   v_client_id uuid;
   v_job_id uuid;
-  -- normalize the address for matching: lowercase, drop trailing ", USA", collapse spaces
-  v_norm text := lower(regexp_replace(regexp_replace(coalesce(p_address, ''), ',?\s*usa\s*$', '', 'i'), '\s+', ' ', 'g'));
+  v_norm text := limb_norm_addr(p_address);
 begin
   if v_norm = '' or p_date is null then
     raise exception 'p_address and p_date are required';
@@ -36,7 +58,7 @@ begin
   select id into v_client_id
   from clients
   where user_id = p_user_id
-    and lower(regexp_replace(regexp_replace(coalesce(address, ''), ',?\s*usa\s*$', '', 'i'), '\s+', ' ', 'g')) = v_norm
+    and limb_norm_addr(address) = v_norm
   order by created_at
   limit 1;
 
@@ -64,7 +86,15 @@ begin
 end;
 $$;
 
+grant execute on function limb_norm_addr to service_role;
 grant execute on function ingest_lead to service_role;
+
+-- Optional hard guarantee: once existing duplicates are merged (Clients → check
+-- 2+ rows → Merge), this unique index makes a second client at the same
+-- normalized address impossible at the DB level, not just in the RPC's lookup.
+-- It will FAIL to create while dupes still exist — merge them first, then run:
+--   create unique index if not exists clients_user_norm_addr_uidx
+--     on clients (user_id, limb_norm_addr(address));
 
 -- ---------------------------------------------------------------------------
 -- n8n HTTP Request node:
