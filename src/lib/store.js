@@ -147,6 +147,23 @@ const cloud = {
   updateJob: (id, patch) => supabase.from('jobs').update(jobPatchToRow(patch)).eq('id', id).then(({ error }) => error && console.error(error)),
 }
 
+// Auto-refresh: the app fetches once on load and has no realtime subscription,
+// so a lead ingested (via n8n/TaskRabbit) while the tab sits open won't appear
+// until reload. Re-pull from Supabase whenever the tab regains focus/visibility.
+// Attached once at module scope (the useStore hook mounts on many components).
+if (isCloud && typeof window !== 'undefined') {
+  let lastRefetch = 0
+  const refetch = () => {
+    if (document.visibilityState === 'hidden' || loadStarted === false) return
+    const now = Date.now()
+    if (now - lastRefetch < 3000) return // debounce focus/visibility bursts
+    lastRefetch = now
+    cloud.load()
+  }
+  window.addEventListener('focus', refetch)
+  document.addEventListener('visibilitychange', refetch)
+}
+
 function visitsFor(client, line, today, horizon, startISO) {
   const out = []
   const { every, unit } = normFreq(line.frequency)
