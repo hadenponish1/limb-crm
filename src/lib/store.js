@@ -100,13 +100,19 @@ function dstr(offsetDays) { const d = new Date(); d.setDate(d.getDate() + offset
 // Give seed clients a demo source so the badge/filter is visible in local mode
 seed.clients.forEach((c, i) => { if (!c.source) c.source = ['TaskRabbit', 'Referral', 'Direct'][i % 3] })
 
+// Demo reminders (local mode only) so the dashboard widget + drawer aren't empty
+const seedTask = (text, dueOffset) => ({ id: newId('t'), text, due: dueOffset == null ? '' : dstr(dueOffset), done: false, createdAt: new Date().toISOString(), doneAt: null })
+if (seed.clients[5]) seed.clients[5].tasks = [seedTask('Send landscape design proposal', -1), seedTask('Follow up on deposit', 2)]
+if (seed.clients[6]) seed.clients[6].tasks = [seedTask('Send estimate for tree & shrub care', 0)]
+if (seed.clients[0]) seed.clients[0].tasks = [seedTask('Confirm seasonal cleanup date', 5), seedTask('Drop off gate remote', null)]
+
 function loadLocal() {
   try { const raw = localStorage.getItem(KEY); if (raw) return JSON.parse(raw) } catch (e) { /* ignore */ }
   return seed
 }
 
 // ---- Row <-> app mapping (cloud mode) ----
-const rowToClient = (r) => ({ id: r.id, name: r.name, contact: r.contact, email: r.email, phone: r.phone, address: r.address, lat: r.lat, lng: r.lng, status: r.status, source: r.source || '', services: r.services || [], notes: r.notes || [], createdAt: (r.created_at || '').slice(0, 10) })
+const rowToClient = (r) => ({ id: r.id, name: r.name, contact: r.contact, email: r.email, phone: r.phone, address: r.address, lat: r.lat, lng: r.lng, status: r.status, source: r.source || '', services: r.services || [], notes: r.notes || [], tasks: r.tasks || [], createdAt: (r.created_at || '').slice(0, 10) })
 const rowToJob = (r) => ({ id: r.id, clientId: r.client_id, serviceId: r.service_id, title: r.title, date: r.date, time: r.time, duration: r.duration, amount: Number(r.amount) || 0, type: r.type, recurring: r.recurring, notes: r.notes || '' })
 const clientToRow = (c) => ({ id: c.id, name: c.name, contact: c.contact, email: c.email, phone: c.phone, address: c.address, lat: c.lat, lng: c.lng, status: c.status, source: c.source || null, services: c.services || [], notes: c.notes || [] })
 // notes is added only when present so job inserts still work if the notes column
@@ -142,6 +148,9 @@ const cloud = {
   insertClient: (c) => supabase.from('clients').insert(clientToRow(c)).then(({ error }) => error && console.error(error)),
   insertClients: (cs) => supabase.from('clients').insert(cs.map(clientToRow)).then(({ error }) => error && console.error(error)),
   updateClient: (c) => supabase.from('clients').update(clientToRow(c)).eq('id', c.id).then(({ error }) => error && console.error(error)),
+  // targeted tasks update — keeps clientToRow free of tasks so other client writes
+  // work even before the tasks column is migrated (supabase/add-client-tasks.sql)
+  updateClientTasks: (id, tasks) => supabase.from('clients').update({ tasks }).eq('id', id).then(({ error }) => error && console.error(error)),
   deleteClients: (ids) => supabase.from('clients').delete().in('id', ids).then(({ error }) => error && console.error(error)),
   insertJobs: (jobs) => supabase.from('jobs').insert(jobs.map(jobToRow)).then(({ error }) => error && console.error(error)),
   deleteJob: (id) => supabase.from('jobs').delete().eq('id', id).then(({ error }) => error && console.error(error)),
@@ -195,7 +204,7 @@ export function useStore() {
   }, [])
 
   const addClient = useCallback((client) => {
-    const c = { ...client, id: uid(), notes: client.notes || [], services: client.services || [] }
+    const c = { ...client, id: uid(), notes: client.notes || [], services: client.services || [], tasks: client.tasks || [] }
     state = { ...state, clients: [c, ...state.clients] }
     commit()
     if (isCloud) cloud.insertClient(c)
@@ -259,6 +268,24 @@ export function useStore() {
   const deleteNote = useCallback((clientId, noteId) => {
     state = { ...state, clients: state.clients.map((c) => (c.id === clientId ? { ...c, notes: (c.notes || []).filter((n) => n.id !== noteId) } : c)) }
     commit(); persistClient(clientId)
+  }, [])
+
+  // --- Tasks / reminders (JSONB `tasks` on the client; targeted cloud update) ---
+  const persistTasks = (id) => { if (isCloud) { const c = findClient(id); if (c) cloud.updateClientTasks(id, c.tasks || []) } }
+  const mapTasks = (clientId, fn) => {
+    state = { ...state, clients: state.clients.map((c) => (c.id === clientId ? { ...c, tasks: fn(c.tasks || []) } : c)) }
+    commit(); persistTasks(clientId)
+  }
+  const addTask = useCallback((clientId, { text, due = '' }) => {
+    if (!text || !text.trim()) return
+    const task = { id: newId('t'), text: text.trim(), due: due || '', done: false, createdAt: new Date().toISOString(), doneAt: null }
+    mapTasks(clientId, (ts) => [task, ...ts])
+  }, [])
+  const toggleTask = useCallback((clientId, taskId) => {
+    mapTasks(clientId, (ts) => ts.map((t) => (t.id === taskId ? { ...t, done: !t.done, doneAt: !t.done ? new Date().toISOString() : null } : t)))
+  }, [])
+  const deleteTask = useCallback((clientId, taskId) => {
+    mapTasks(clientId, (ts) => ts.filter((t) => t.id !== taskId))
   }, [])
 
   const upsertService = useCallback((clientId, service) => {
@@ -376,6 +403,7 @@ export function useStore() {
   return {
     ...state, loading, cloud: isCloud,
     addClient, updateClient, deleteClient, deleteClients, mergeClients, addNote, deleteNote, upsertService,
+    addTask, toggleTask, deleteTask,
     addJob, deleteJob, updateJob, generateSeries, previewRecurring, generateRecurring, rescheduleSeries, bulkImport, reset,
   }
 }

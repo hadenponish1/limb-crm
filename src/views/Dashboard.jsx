@@ -4,8 +4,9 @@ import { Icon } from '../components/icons'
 import MonthCalendar from '../components/MonthCalendar'
 import { money } from '../lib/format'
 import { monthlyRecurring, bookedThisMonth, projectRevenue, counts } from '../lib/metrics'
+import { openTasks, dueStatus, dueLabel } from '../lib/tasks'
 
-export default function Dashboard({ clients, jobs, go }) {
+export default function Dashboard({ clients, jobs, go, onOpenClient, toggleTask }) {
   const mrr = monthlyRecurring(clients)
   const booked = bookedThisMonth(jobs)
   const { series } = projectRevenue(clients, 6)
@@ -26,6 +27,8 @@ export default function Dashboard({ clients, jobs, go }) {
         <Kpi label="Active clients" value={c.active} icon="users"
           meta={<span style={{ color: 'var(--muted)' }}>{c.leads} open leads</span>} />
       </div>
+
+      <ReminderWidget clients={clients} onOpenClient={onOpenClient} toggleTask={toggleTask} />
 
       <div className="grid two-col">
         <div className="card card-pad">
@@ -76,6 +79,37 @@ export default function Dashboard({ clients, jobs, go }) {
         <MonthCalendar jobs={jobs} byId={byId} initialMode="week" lockMode compact
           onDayClick={() => go('schedule')} onJobClick={() => go('schedule')} />
       </div>
+    </div>
+  )
+}
+
+function ReminderWidget({ clients, onOpenClient, toggleTask }) {
+  const open = openTasks(clients)
+  return (
+    <div className="card card-pad">
+      <div className="card-head" style={{ marginBottom: open.length ? 14 : 0 }}>
+        <div className="card-title"><Icon.bell style={{ width: 16, height: 16, verticalAlign: '-3px', marginRight: 8, color: 'var(--green)' }} />Follow-ups &amp; reminders</div>
+        {open.length > 0 && <span className="page-sub" style={{ fontSize: 12.5 }}>{open.length} open</span>}
+      </div>
+      {open.length === 0 ? (
+        <div className="page-sub" style={{ fontSize: 13 }}>You're all caught up — no open reminders. Add one from any client's page.</div>
+      ) : (
+        <div className="task-list" style={{ maxHeight: 300, overflowY: 'auto' }}>
+          {open.map((t) => {
+            const st = dueStatus(t.due)
+            return (
+              <div className="task" key={t.id}>
+                <button className="task-check" onClick={() => toggleTask(t.clientId, t.id)} title="Mark done"><span className="task-box" /></button>
+                <button className="task-body task-open" onClick={() => onOpenClient(t.clientId)} title="Open client">
+                  <span className="task-text">{t.text}</span>
+                  <span className="task-client">{t.clientName}</span>
+                  {t.due && <span className={`task-due ${st}`}>{dueLabel(t.due)}</span>}
+                </button>
+              </div>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }

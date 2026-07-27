@@ -94,7 +94,7 @@ export default function App() {
             <div className="empty" style={{ padding: 80 }}>Loading your data…</div>
           ) : (
             <>
-              {tab === 'dashboard' && <Dashboard {...store} go={go} />}
+              {tab === 'dashboard' && <Dashboard {...store} go={go} onOpenClient={openClient} />}
               {tab === 'schedule' && <Schedule {...store} onOpenClient={openClient} />}
               {tab === 'clients' && <Clients {...store} onNew={() => setShowLead(true)} focusClientId={focusClient} onFocusHandled={() => setFocusClient(null)} />}
               {tab === 'map' && <MapView {...store} />}

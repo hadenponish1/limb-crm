@@ -3,6 +3,7 @@ import { Icon } from './icons'
 import { Avatar, StatusBadge, TypeBadge, StageBadge } from './ui'
 import { blankService, freqLabel, isoLocal, SOURCES } from '../lib/store'
 import ServiceLineFields from './ServiceLineFields'
+import TasksSection from './TasksSection'
 import JobModal from './JobModal'
 import RescheduleModal from './RescheduleModal'
 import { geocode } from '../lib/geocode'
@@ -10,7 +11,7 @@ import { money, dayParts, fmtTime } from '../lib/format'
 import { clientMRR, clientLTV } from '../lib/metrics'
 import { googleCalendarUrl } from '../lib/calendar'
 
-export default function ClientDrawer({ client, onClose, updateClient, deleteClient, addNote, deleteNote, jobs, addJob, deleteJob, generateSeries, upsertService, rescheduleSeries }) {
+export default function ClientDrawer({ client, onClose, updateClient, deleteClient, addNote, deleteNote, addTask, toggleTask, deleteTask, jobs, addJob, deleteJob, generateSeries, upsertService, rescheduleSeries }) {
   const [f, setF] = useState(client)
   const [dirty, setDirty] = useState(false)
   const [note, setNote] = useState('')
@@ -180,6 +181,8 @@ export default function ClientDrawer({ client, onClose, updateClient, deleteClie
               )
             })}
           </div>
+
+          <TasksSection client={client} addTask={addTask} toggleTask={toggleTask} deleteTask={deleteTask} />
 
           <div className="section-label" style={{ marginTop: 20 }}>Notes & activity</div>
           <form onSubmit={submitNote} style={{ marginBottom: 14 }}>
