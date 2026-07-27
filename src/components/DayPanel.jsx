@@ -98,6 +98,7 @@ export default function DayPanel({ date, jobs, byId, onClose, onNewJob, onJobCli
                 const gcal = googleCalendarUrl({ title: `${cl?.name || 'Job'} — ${j.title}`, dateISO: j.date, time: minToTime(s), durationMin: j.duration, details: j.title, location: cl?.address || '' })
                 return (
                   <div key={j.id} className={`tg-event${past ? ' done' : ''}${j.type === 'project' ? ' project' : ''}${dragging ? ' dragging' : ''}`}
+                    title={j.notes ? `${j.title}\n${j.notes}` : undefined}
                     style={{ top, height, left: `calc(${(item.col * 100) / item.cols}% + 1px)`, width: `calc(${100 / item.cols}% - 3px)`, cursor: draggable ? undefined : (onJobClick ? 'pointer' : 'default') }}
                     onPointerDown={draggable ? (e) => onDown(e, item) : undefined}
                     onPointerMove={draggable ? onMove : undefined}
@@ -106,6 +107,7 @@ export default function DayPanel({ date, jobs, byId, onClose, onNewJob, onJobCli
                     <div className="tg-event-time">{fmtTime(minToTime(s))}</div>
                     <div className="tg-event-title">{cl?.name || j.title}</div>
                     {height > 40 && <div className="tg-event-sub">{j.title} · {money(j.amount)}</div>}
+                    {j.notes && height > 62 && <div className="tg-event-sub" style={{ fontStyle: 'italic', opacity: 0.8 }}>{j.notes}</div>}
                     <div className="tg-event-actions">
                       <a className="icon-btn" href={gcal} target="_blank" rel="noreferrer" title="Add to Google Calendar" onPointerDown={(e) => e.stopPropagation()}><Icon.calendar style={{ width: 13, height: 13 }} /></a>
                       {deleteJob && <button className="icon-btn" title="Delete" onPointerDown={(e) => e.stopPropagation()} onClick={() => deleteJob(j.id)}><Icon.trash style={{ width: 13, height: 13 }} /></button>}

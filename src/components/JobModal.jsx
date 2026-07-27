@@ -26,6 +26,7 @@ export default function JobModal({
   const [duration, setDuration] = useState(60)
   const [amount, setAmount] = useState('')
   const [title, setTitle] = useState('')
+  const [notes, setNotes] = useState('')
   const [date, setDate] = useState(initialDate || isoLocal(new Date()))
   const [weeks, setWeeks] = useState(8)
   const [pushGoogle, setPushGoogle] = useState(true)
@@ -61,7 +62,7 @@ export default function JobModal({
       if (serviceSel === '__new__') {
         serviceId = upsertService(clientId, { service: svcName, type: 'project', stage: 'won', amount: Number(amount) || 0 })
       }
-      const job = { clientId, serviceId, title: title || svcName, date, time, duration: Number(duration) || 60, amount: Number(amount) || 0, type: 'project' }
+      const job = { clientId, serviceId, title: title || svcName, date, time, duration: Number(duration) || 60, amount: Number(amount) || 0, type: 'project', notes }
       addJob(job)
       if (pushGoogle) {
         window.open(googleCalendarUrl({ title: `${client?.name || 'Job'} — ${job.title}`, dateISO: date, time, durationMin: job.duration, details: job.title, location: client?.address || '' }), '_blank')
@@ -164,6 +165,7 @@ export default function JobModal({
                 <div className="field"><label>Duration (min)</label><input type="number" value={duration} onChange={(e) => setDuration(e.target.value)} /></div>
                 <div className="field"><label>Amount</label><input type="number" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0" required /></div>
               </div>
+              <div className="field"><label>Notes</label><textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} placeholder="e.g. mulch the front beds, pull weeds in back, gate code 1234" /></div>
               <label style={{ display: 'flex', alignItems: 'center', gap: 9, fontSize: 13.5, fontWeight: 500, cursor: 'pointer' }}>
                 <input type="checkbox" checked={pushGoogle} onChange={(e) => setPushGoogle(e.target.checked)} style={{ width: 16, height: 16 }} />
                 Open in Google Calendar after saving

@@ -3,14 +3,20 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGri
 import { Kpi } from '../components/ui'
 import RevenueCalendar from '../components/RevenueCalendar'
 import DayPanel from '../components/DayPanel'
+import JobModal from '../components/JobModal'
+import JobDetail from '../components/JobDetail'
 import { money } from '../lib/format'
 import { freqLabel } from '../lib/store'
 import { monthlyRecurring, projectRevenue, counts, byService, revenueTimeline, maintenanceReport } from '../lib/metrics'
 
 const PIE = ['#6B7F65', '#c99a4b']
 
-export default function Metrics({ clients, jobs, onOpenClient, scrollTo, onScrolled }) {
+export default function Metrics({ clients, jobs, onOpenClient, scrollTo, onScrolled, addJob, updateJob, deleteJob, upsertService, generateSeries }) {
   const [dayPanel, setDayPanel] = useState(null)
+  const [detail, setDetail] = useState(null)   // job being edited
+  const [addOpen, setAddOpen] = useState(false)
+  const [addDate, setAddDate] = useState(null)
+  const openAdd = (date = null) => { setAddDate(date); setAddOpen(true) }
   const maintRef = useRef(null)
   const byId = Object.fromEntries(clients.map((x) => [x.id, x]))
   const maint = maintenanceReport(clients)
@@ -150,7 +156,14 @@ export default function Metrics({ clients, jobs, onOpenClient, scrollTo, onScrol
         <Kpi label="Total accounts" value={c.total} icon="dashboard" meta={<span style={{ color: 'var(--muted)' }}>clients + leads</span>} />
       </div>
 
-      {dayPanel && <DayPanel date={dayPanel} jobs={jobs} byId={byId} onClose={() => setDayPanel(null)} />}
+      {dayPanel && (
+        <DayPanel date={dayPanel} jobs={jobs} byId={byId} deleteJob={deleteJob} updateJob={updateJob}
+          onClose={() => setDayPanel(null)}
+          onJobClick={(j) => setDetail(j)}
+          onNewJob={(date) => { setDayPanel(null); openAdd(date) }} />
+      )}
+      {detail && <JobDetail job={detail} client={byId[detail.clientId]} updateJob={updateJob} onOpenClient={onOpenClient} onClose={() => setDetail(null)} onDelete={(id) => { deleteJob(id); setDetail(null) }} />}
+      {addOpen && <JobModal clients={clients} initialDate={addDate} onClose={() => setAddOpen(false)} addJob={addJob} upsertService={upsertService} generateSeries={generateSeries} />}
     </div>
   )
 }

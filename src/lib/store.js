@@ -107,10 +107,12 @@ function loadLocal() {
 
 // ---- Row <-> app mapping (cloud mode) ----
 const rowToClient = (r) => ({ id: r.id, name: r.name, contact: r.contact, email: r.email, phone: r.phone, address: r.address, lat: r.lat, lng: r.lng, status: r.status, source: r.source || '', services: r.services || [], notes: r.notes || [], createdAt: (r.created_at || '').slice(0, 10) })
-const rowToJob = (r) => ({ id: r.id, clientId: r.client_id, serviceId: r.service_id, title: r.title, date: r.date, time: r.time, duration: r.duration, amount: Number(r.amount) || 0, type: r.type, recurring: r.recurring })
+const rowToJob = (r) => ({ id: r.id, clientId: r.client_id, serviceId: r.service_id, title: r.title, date: r.date, time: r.time, duration: r.duration, amount: Number(r.amount) || 0, type: r.type, recurring: r.recurring, notes: r.notes || '' })
 const clientToRow = (c) => ({ id: c.id, name: c.name, contact: c.contact, email: c.email, phone: c.phone, address: c.address, lat: c.lat, lng: c.lng, status: c.status, source: c.source || null, services: c.services || [], notes: c.notes || [] })
-const jobToRow = (j) => ({ id: j.id, client_id: j.clientId, service_id: j.serviceId, title: j.title, date: j.date, time: j.time, duration: j.duration, amount: j.amount, type: j.type, recurring: !!j.recurring })
-const JOB_COLS = { clientId: 'client_id', serviceId: 'service_id', title: 'title', date: 'date', time: 'time', duration: 'duration', amount: 'amount', type: 'type', recurring: 'recurring' }
+// notes is added only when present so job inserts still work if the notes column
+// hasn't been migrated yet (supabase/add-job-notes.sql) — only using notes needs it.
+const jobToRow = (j) => { const r = { id: j.id, client_id: j.clientId, service_id: j.serviceId, title: j.title, date: j.date, time: j.time, duration: j.duration, amount: j.amount, type: j.type, recurring: !!j.recurring }; if (j.notes) r.notes = j.notes; return r }
+const JOB_COLS = { clientId: 'client_id', serviceId: 'service_id', title: 'title', date: 'date', time: 'time', duration: 'duration', amount: 'amount', type: 'type', recurring: 'recurring', notes: 'notes' }
 const jobPatchToRow = (patch) => { const r = {}; for (const k in patch) if (JOB_COLS[k]) r[JOB_COLS[k]] = patch[k]; return r }
 
 // ---- Shared in-memory store (source of truth for the UI in both modes) ----
