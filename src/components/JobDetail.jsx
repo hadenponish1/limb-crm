@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Icon } from './icons'
 import { money } from '../lib/format'
 import { googleCalendarUrl, downloadICS } from '../lib/calendar'
+import { directionsUrl } from '../lib/maps'
 
 // Edit a single job (used by both Schedule and Metrics day panels).
 export default function JobDetail({ job, client, onClose, onDelete, updateJob, onOpenClient }) {
@@ -37,7 +38,11 @@ export default function JobDetail({ job, client, onClose, onDelete, updateJob, o
             ) : (
               <div className="card-title">{client?.name}</div>
             )}
-            {client?.address && <div className="page-sub"><Icon.pin style={{ width: 12, height: 12, verticalAlign: '-1px' }} /> {client.address}</div>}
+            {client?.address && (
+              <a className="addr-link" href={directionsUrl(client.address)} target="_blank" rel="noreferrer" title="Open in Apple Maps">
+                <Icon.pin style={{ width: 12, height: 12, verticalAlign: '-1px' }} /> {client.address}
+              </a>
+            )}
           </div>
           <button className="icon-btn" onClick={onClose}><Icon.x /></button>
         </div>
@@ -53,6 +58,9 @@ export default function JobDetail({ job, client, onClose, onDelete, updateJob, o
           </div>
           <div className="field"><label>Notes</label><textarea value={f.notes} onChange={set('notes')} rows={3} placeholder="e.g. mulch the front beds, pull weeds in back, gate code 1234" /></div>
           {job.recurring && <div className="detail-row" style={{ color: 'var(--green)', borderBottom: 'none', paddingTop: 0 }}><Icon.repeat /> <span>Auto-generated recurring visit</span></div>}
+          {client?.address && (
+            <a className="btn btn-primary btn-sm" href={directionsUrl(client.address)} target="_blank" rel="noreferrer" style={{ width: '100%', justifyContent: 'center', marginTop: 8 }}><Icon.navigation /> Directions</a>
+          )}
           <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
             <a className="btn btn-ghost btn-sm" href={gcal} target="_blank" rel="noreferrer" style={{ flex: 1, justifyContent: 'center' }}><Icon.calendar /> Google Calendar</a>
             <button className="btn btn-ghost btn-sm" onClick={() => downloadICS({ title: `${client?.name} — ${f.title}`, dateISO: f.date, time: f.time, durationMin: Number(f.duration) || 60, location: client?.address })}><Icon.download /> .ics</button>

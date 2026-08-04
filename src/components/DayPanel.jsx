@@ -3,6 +3,7 @@ import { Icon } from './icons'
 import { money, fmtTime, fmtDate } from '../lib/format'
 import { isoLocal } from '../lib/store'
 import { googleCalendarUrl } from '../lib/calendar'
+import { directionsUrl } from '../lib/maps'
 
 const HOUR_H = 56 // px per hour
 const SNAP = 15   // minutes
@@ -109,6 +110,7 @@ export default function DayPanel({ date, jobs, byId, onClose, onNewJob, onJobCli
                     {height > 40 && <div className="tg-event-sub">{j.title} · {money(j.amount)}</div>}
                     {j.notes && height > 62 && <div className="tg-event-sub" style={{ fontStyle: 'italic', opacity: 0.8 }}>{j.notes}</div>}
                     <div className="tg-event-actions">
+                      {cl?.address && <a className="icon-btn" href={directionsUrl(cl.address)} target="_blank" rel="noreferrer" title="Directions (Apple Maps)" onPointerDown={(e) => e.stopPropagation()}><Icon.navigation style={{ width: 13, height: 13 }} /></a>}
                       <a className="icon-btn" href={gcal} target="_blank" rel="noreferrer" title="Add to Google Calendar" onPointerDown={(e) => e.stopPropagation()}><Icon.calendar style={{ width: 13, height: 13 }} /></a>
                       {deleteJob && <button className="icon-btn" title="Delete" onPointerDown={(e) => e.stopPropagation()} onClick={() => deleteJob(j.id)}><Icon.trash style={{ width: 13, height: 13 }} /></button>}
                     </div>
