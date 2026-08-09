@@ -23,4 +23,6 @@ export const Icon = {
   clock: (p) => (<svg viewBox="0 0 24 24" {...s} {...p}><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>),
   external: (p) => (<svg viewBox="0 0 24 24" {...s} {...p}><path d="M15 3h6v6M10 14 21 3M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>),
   download: (p) => (<svg viewBox="0 0 24 24" {...s} {...p}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>),
+  quote: (p) => (<svg viewBox="0 0 24 24" {...s} {...p}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M12 18v-6M9.5 13.2c0-.7.7-1.2 1.6-1.2h1.2a1.3 1.3 0 0 1 0 2.6h-1.4a1.3 1.3 0 0 0 0 2.6h1.3c.9 0 1.6-.5 1.6-1.2"/></svg>),
+  pencil: (p) => (<svg viewBox="0 0 24 24" {...s} {...p}><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>),
 }

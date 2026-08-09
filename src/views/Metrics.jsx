@@ -151,7 +151,7 @@ export default function Metrics({ clients, jobs, onOpenClient, scrollTo, onScrol
 
       <div className="grid kpi-grid">
         <Kpi label="Won project value" value={money(activeProjects)} icon="briefcase" meta={<span style={{ color: 'var(--muted)' }}>booked, in progress</span>} />
-        <Kpi label="Weighted pipeline" value={money(pipeline)} icon="trend" meta={<span style={{ color: 'var(--muted)' }}>open quotes @ 40%</span>} />
+        <Kpi label="Weighted pipeline" value={money(pipeline)} icon="trend" meta={<span style={{ color: 'var(--muted)' }}>open quotes, by confidence</span>} />
         <Kpi label="Active clients" value={c.active} icon="users" meta={<span style={{ color: 'var(--muted)' }}>{c.leads} open leads</span>} />
         <Kpi label="Total accounts" value={c.total} icon="dashboard" meta={<span style={{ color: 'var(--muted)' }}>clients + leads</span>} />
       </div>

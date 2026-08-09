@@ -13,8 +13,34 @@ export function clientMRR(c) {
 export function clientWonProjects(c) {
   return projectLines(c).filter((l) => l.stage === 'won').reduce((s, l) => s + (Number(l.amount) || 0), 0)
 }
+// Open quotes (estimates not yet won or lost). Legacy lines with no stage count as quoted.
+export const isOpenQuote = (l) => (l.stage || 'quoted') === 'quoted'
 export function clientQuotedProjects(c) {
-  return projectLines(c).filter((l) => l.stage !== 'won').reduce((s, l) => s + (Number(l.amount) || 0), 0)
+  return projectLines(c).filter(isOpenQuote).reduce((s, l) => s + (Number(l.amount) || 0), 0)
+}
+// A quote's projection weight = ballpark $ × win-likelihood. Quotes with no explicit
+// confidence (e.g. created before this field existed) default to 50% — even odds,
+// matching the estimate form's default so the table, projections, and editor agree.
+export const quoteWeighted = (l) => (Number(l.amount) || 0) * ((l.confidence ?? 50) / 100)
+export function weightedPipeline(clients) {
+  return clients.reduce((s, c) => s + projectLines(c).filter(isOpenQuote).reduce((a, l) => a + quoteWeighted(l), 0), 0)
+}
+
+// Flat rows for the Quotes view. stage: 'quoted' | 'won' | 'lost' | 'all'.
+export function quoteRows(clients, stage = 'quoted') {
+  const rows = []
+  clients.forEach((c) => projectLines(c).forEach((l) => {
+    const st = l.stage || 'quoted'
+    if (stage !== 'all' && st !== stage) return
+    rows.push({
+      clientId: c.id, name: c.name, address: c.address || '', source: c.source || '',
+      id: l.id, service: l.service, desc: l.desc || '', amount: Number(l.amount) || 0,
+      confidence: l.confidence ?? 50, startDate: l.startDate || '', stage: st,
+      weighted: st === 'quoted' ? quoteWeighted(l) : Number(l.amount) || 0,
+      line: l,
+    })
+  }))
+  return rows
 }
 
 // Monthly $ for one recurring service line
@@ -63,11 +89,8 @@ export function bookedThisMonth(jobs) {
 export function projectRevenue(clients, months = 6) {
   const mrr = monthlyRecurring(clients)
   let activeProjects = 0
-  let pipeline = 0
-  clients.forEach((c) => {
-    activeProjects += clientWonProjects(c)
-    pipeline += clientQuotedProjects(c) * 0.4
-  })
+  clients.forEach((c) => { activeProjects += clientWonProjects(c) })
+  const pipeline = weightedPipeline(clients)
   const series = []
   const now = new Date()
   for (let i = 0; i < months; i++) {
@@ -140,11 +163,20 @@ export function revenueTimeline(jobs, clients) {
   const bookedByService = {}
   jobs.forEach((j) => { if (j.serviceId) bookedByService[j.serviceId] = (bookedByService[j.serviceId] || 0) + (j.amount || 0) })
 
-  let remainingWon = 0
-  let pipeline = 0
+  // Project/quote revenue lands in the month it's expected to START. Won work counts
+  // the portion not yet booked as jobs; open quotes count at their win-likelihood.
+  // Undated or past-dated work falls into next month so it still shows in the forecast.
+  const projByMonth = {} // month index -> projected $
   clients.forEach((c) => projectLines(c).forEach((l) => {
-    if (l.stage === 'won') remainingWon += Math.max(0, (l.amount || 0) - (bookedByService[l.id] || 0))
-    else pipeline += (l.amount || 0) * 0.4
+    let val = 0
+    if (l.stage === 'won') val = Math.max(0, (l.amount || 0) - (bookedByService[l.id] || 0))
+    else if ((l.stage || 'quoted') === 'quoted') val = quoteWeighted(l)
+    else return // lost quotes don't forecast
+    if (val <= 0) return
+    let mIdx = curIdx + 1
+    if (l.startDate) { const [yy, mm] = l.startDate.split('-').map(Number); if (yy && mm) mIdx = yy * 12 + (mm - 1) }
+    if (mIdx <= curIdx) mIdx = curIdx + 1
+    projByMonth[mIdx] = (projByMonth[mIdx] || 0) + val
   }))
 
   // Window: this calendar year only — from the earliest job THIS YEAR through
@@ -172,8 +204,7 @@ export function revenueTimeline(jobs, clients) {
     let projected = 0
     if (future) {
       const fo = idx - curIdx // 1, 2, 3 ...
-      const share = fo <= 3 ? (remainingWon + pipeline) / 3 : 0 // spread remaining project work over the next 3 months
-      projected = Math.round(mrr + share)
+      projected = Math.round(mrr + (projByMonth[idx] || 0))
       if (fo <= 3) projectedNext += projected // KPI is specifically the next 3 months
     } else {
       actual = actualMap[key] || 0

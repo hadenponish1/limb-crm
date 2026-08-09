@@ -32,10 +32,14 @@ export default function JobModal({
   const [pushGoogle, setPushGoogle] = useState(true)
   const [result, setResult] = useState(null)
 
-  // don't clobber the caller's initial service on the first render
-  const first = useRef(true)
+  // Reset the service selection only when the client or job type actually changes —
+  // never on mount, so a caller-supplied initialServiceId survives (and StrictMode's
+  // double-invoked mount effect can't clobber it).
+  const prevKey = useRef(`${clientId}|${jobType}`)
   useEffect(() => {
-    if (first.current) { first.current = false; return }
+    const key = `${clientId}|${jobType}`
+    if (prevKey.current === key) return
+    prevKey.current = key
     setServiceSel(matching[0]?.id || '__new__')
   }, [clientId, jobType])
 

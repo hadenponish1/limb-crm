@@ -304,6 +304,11 @@ export function useStore() {
     return withId.id
   }, [])
 
+  const removeService = useCallback((clientId, serviceId) => {
+    state = { ...state, clients: state.clients.map((c) => (c.id === clientId ? { ...c, services: (c.services || []).filter((s) => s.id !== serviceId) } : c)) }
+    commit(); persistClient(clientId)
+  }, [])
+
   const addJob = useCallback((job) => {
     const j = { ...job, id: uid() }
     state = { ...state, jobs: [j, ...state.jobs] }
@@ -403,7 +408,7 @@ export function useStore() {
 
   return {
     ...state, loading, cloud: isCloud,
-    addClient, updateClient, deleteClient, deleteClients, mergeClients, addNote, deleteNote, upsertService,
+    addClient, updateClient, deleteClient, deleteClients, mergeClients, addNote, deleteNote, upsertService, removeService,
     addTask, toggleTask, deleteTask,
     addJob, deleteJob, updateJob, generateSeries, previewRecurring, generateRecurring, rescheduleSeries, bulkImport, reset,
   }

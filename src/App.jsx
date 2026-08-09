@@ -7,6 +7,7 @@ import AutoGeocoder from './components/AutoGeocoder'
 import Dashboard from './views/Dashboard'
 import Schedule from './views/Schedule'
 import Clients from './views/Clients'
+import Quotes from './views/Quotes'
 import MapView from './views/MapView'
 import Metrics from './views/Metrics'
 
@@ -14,6 +15,7 @@ const NAV = [
   { id: 'dashboard', label: 'Dashboard', icon: 'dashboard' },
   { id: 'schedule', label: 'Schedule', icon: 'calendar' },
   { id: 'clients', label: 'Clients & Leads', icon: 'users' },
+  { id: 'quotes', label: 'Quotes', icon: 'quote' },
   { id: 'map', label: 'Map', icon: 'map' },
   { id: 'metrics', label: 'Metrics', icon: 'chart' },
 ]
@@ -22,6 +24,7 @@ const TITLES = {
   dashboard: ['Dashboard', 'Your business at a glance'],
   schedule: ['Schedule', 'Plan jobs and sync to Google Calendar'],
   clients: ['Clients & Leads', 'Everyone you serve or are quoting'],
+  quotes: ['Quotes', 'Estimates for bigger project work'],
   map: ['Map', 'See how your properties are spread out'],
   metrics: ['Metrics', 'Revenue mix and projections'],
 }
@@ -97,6 +100,7 @@ export default function App() {
               {tab === 'dashboard' && <Dashboard {...store} go={go} onOpenClient={openClient} />}
               {tab === 'schedule' && <Schedule {...store} onOpenClient={openClient} />}
               {tab === 'clients' && <Clients {...store} onNew={() => setShowLead(true)} focusClientId={focusClient} onFocusHandled={() => setFocusClient(null)} />}
+              {tab === 'quotes' && <Quotes {...store} onOpenClient={openClient} />}
               {tab === 'map' && <MapView {...store} />}
               {tab === 'metrics' && <Metrics {...store} onOpenClient={openClient} scrollTo={metricsAnchor} onScrolled={() => setMetricsAnchor(null)} />}
             </>
