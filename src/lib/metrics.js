@@ -1,4 +1,5 @@
 import { freqPerMonth as perMonth } from './store'
+import { expenseForMonthKey } from './expenses'
 
 // ---- Per-client derivations ----
 export const recurringLines = (c) => (c.services || []).filter((s) => s.type === 'recurring')
@@ -210,9 +211,21 @@ export function revenueTimeline(jobs, clients) {
       actual = actualMap[key] || 0
       if (y === curYear) ytd += actual
     }
-    series.push({ month: label, actual: Math.round(actual), projected })
+    series.push({ month: label, key, actual: Math.round(actual), projected })
   }
   return { series, ytd, projectedNext }
+}
+
+// Month-by-month revenue vs expenses vs net, aligned to the same window as the revenue
+// chart. Revenue = actual (past) or projected (future); expenses = one-off that month +
+// recurring overhead accrued by then; net = revenue − expenses.
+export function profitTimeline(jobs, clients, expenses = []) {
+  const { series } = revenueTimeline(jobs, clients)
+  return series.map((s) => {
+    const revenue = (s.actual || 0) + (s.projected || 0)
+    const expense = expenseForMonthKey(expenses, s.key)
+    return { month: s.month, key: s.key, revenue: Math.round(revenue), expenses: Math.round(expense), net: Math.round(revenue - expense), projected: !!s.projected }
+  })
 }
 
 // Monthly revenue split by service line

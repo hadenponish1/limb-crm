@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, PieChart, Pie, Cell, Legend } from 'recharts'
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, PieChart, Pie, Cell, Legend, ComposedChart, Line, ReferenceLine } from 'recharts'
 import { Kpi } from '../components/ui'
 import RevenueCalendar from '../components/RevenueCalendar'
 import DayPanel from '../components/DayPanel'
@@ -7,11 +7,12 @@ import JobModal from '../components/JobModal'
 import JobDetail from '../components/JobDetail'
 import { money } from '../lib/format'
 import { freqLabel } from '../lib/store'
-import { monthlyRecurring, projectRevenue, counts, byService, revenueTimeline, maintenanceReport } from '../lib/metrics'
+import { monthlyRecurring, projectRevenue, counts, byService, revenueTimeline, maintenanceReport, profitTimeline } from '../lib/metrics'
+import { expensesYTD, monthlyRecurringExpense } from '../lib/expenses'
 
 const PIE = ['#6B7F65', '#c99a4b']
 
-export default function Metrics({ clients, jobs, onOpenClient, scrollTo, onScrolled, addJob, updateJob, deleteJob, upsertService, generateSeries }) {
+export default function Metrics({ clients, jobs, expenses = [], onOpenClient, scrollTo, onScrolled, addJob, updateJob, deleteJob, upsertService, generateSeries }) {
   const [dayPanel, setDayPanel] = useState(null)
   const [detail, setDetail] = useState(null)   // job being edited
   const [addOpen, setAddOpen] = useState(false)
@@ -31,6 +32,11 @@ export default function Metrics({ clients, jobs, onOpenClient, scrollTo, onScrol
   const mrr = monthlyRecurring(clients)
   const { activeProjects, pipeline } = projectRevenue(clients, 6)
   const { series, ytd, projectedNext } = revenueTimeline(jobs, clients)
+  const profit = profitTimeline(jobs, clients, expenses)
+  const expYTD = expensesYTD(expenses)
+  const netYTD = ytd - expYTD
+  const margin = ytd ? Math.round((netYTD / ytd) * 100) : 0
+  const mre = monthlyRecurringExpense(expenses)
   const svc = byService(clients)
   const totalLines = c.recurring + c.project
   const mix = [
@@ -105,6 +111,39 @@ export default function Metrics({ clients, jobs, onOpenClient, scrollTo, onScrol
             <Bar dataKey="actual" stackId="a" fill="#6B7F65" name="actual" radius={[6, 6, 0, 0]} maxBarSize={54} />
             <Bar dataKey="projected" stackId="a" fill="#A8B89A" name="projected" radius={[6, 6, 0, 0]} maxBarSize={54} />
           </BarChart>
+        </ResponsiveContainer>
+      </div>
+
+      <div className="grid kpi-grid">
+        <Kpi label="Revenue YTD" value={money(ytd)} icon="dollar" meta={<span style={{ color: 'var(--muted)' }}>booked, this year</span>} />
+        <Kpi label="Expenses YTD" value={money(expYTD)} icon="receipt" meta={<span style={{ color: 'var(--muted)' }}>≈ {money(mre)}/mo recurring</span>} />
+        <Kpi label="Net profit YTD" value={money(netYTD)} icon="trend" metaClass={netYTD < 0 ? 'down' : 'up'} meta={<span style={{ color: netYTD < 0 ? '#9a5b4a' : 'var(--green)' }}>{netYTD < 0 ? 'in the red' : 'revenue − expenses'}</span>} />
+        <Kpi label="Profit margin" value={`${margin}%`} icon="chart" meta={<span style={{ color: 'var(--muted)' }}>net ÷ revenue</span>} />
+      </div>
+
+      <div className="card card-pad">
+        <div className="card-head">
+          <div>
+            <div className="card-title">Revenue vs expenses</div>
+            <div className="page-sub">Monthly booked revenue and costs, with net profit — future months are projected</div>
+          </div>
+          <div className="legend">
+            <span><i style={{ background: '#6B7F65' }} />Revenue</span>
+            <span><i style={{ background: '#bf7f6b' }} />Expenses</span>
+            <span><i style={{ background: '#20261e' }} />Net</span>
+          </div>
+        </div>
+        <ResponsiveContainer width="100%" height={300}>
+          <ComposedChart data={profit} margin={{ left: -8, right: 8, top: 6 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#eee6d6" vertical={false} />
+            <XAxis dataKey="month" tick={{ fontSize: 12, fill: '#6c7568' }} axisLine={false} tickLine={false} />
+            <YAxis tick={{ fontSize: 12, fill: '#6c7568' }} axisLine={false} tickLine={false} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} />
+            <Tooltip formatter={(v, n) => [money(v), n.charAt(0).toUpperCase() + n.slice(1)]} contentStyle={{ borderRadius: 12, border: '1px solid #e4e0d3', fontSize: 13 }} cursor={{ fill: '#f4efe3' }} />
+            <ReferenceLine y={0} stroke="#d8d0be" />
+            <Bar dataKey="revenue" fill="#6B7F65" radius={[5, 5, 0, 0]} maxBarSize={26} name="revenue" isAnimationActive={false} />
+            <Bar dataKey="expenses" fill="#bf7f6b" radius={[5, 5, 0, 0]} maxBarSize={26} name="expenses" isAnimationActive={false} />
+            <Line type="monotone" dataKey="net" stroke="#20261e" strokeWidth={2} dot={{ r: 3, fill: '#20261e' }} name="net" isAnimationActive={false} />
+          </ComposedChart>
         </ResponsiveContainer>
       </div>
 

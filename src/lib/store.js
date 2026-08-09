@@ -91,6 +91,18 @@ const seed = {
     { id: 'j3', clientId: 'c3', serviceId: 's3a', title: 'Paver base + excavation', date: dstr(3), time: '07:30', duration: 480, amount: 4600, type: 'project' },
     { id: 'j6', clientId: 'c9', serviceId: 's9a', title: 'Patio layout & footers', date: dstr(6), time: '08:00', duration: 360, amount: 3100, type: 'project' },
   ],
+  expenses: [
+    // Recurring overhead (accrues every month from its start date)
+    { id: 'x1', amount: 185, category: 'Insurance', date: '2026-04-01', vendor: 'General liability policy', note: '', clientId: null, jobId: null, recurring: true, frequency: { every: 1, unit: 'month' } },
+    { id: 'x2', amount: 49, category: 'Subscriptions', date: '2026-04-01', vendor: 'Jobber software', note: '', clientId: null, jobId: null, recurring: true, frequency: { every: 1, unit: 'month' } },
+    // One-off costs, some tied to a client/job
+    { id: 'x3', amount: 320, category: 'Materials', date: '2026-05-19', vendor: 'SiteOne — pavers & sand', note: 'Bianchi patio', clientId: 'c3', jobId: null, recurring: false, frequency: null },
+    { id: 'x4', amount: 88.5, category: 'Fuel / Gas', date: '2026-05-06', vendor: 'Sheetz', note: '', clientId: null, jobId: null, recurring: false, frequency: null },
+    { id: 'x5', amount: 240, category: 'Dump / Disposal', date: '2026-06-10', vendor: 'County transfer station', note: 'Spring cleanup haul-off', clientId: null, jobId: null, recurring: false, frequency: null },
+    { id: 'x6', amount: 610, category: 'Tools & Equipment', date: '2026-06-02', vendor: 'Stihl trimmer + blower', note: '', clientId: null, jobId: null, recurring: false, frequency: null },
+    { id: 'x7', amount: 95, category: 'Fuel / Gas', date: '2026-07-08', vendor: 'Sheetz', note: '', clientId: null, jobId: null, recurring: false, frequency: null },
+    { id: 'x8', amount: 1450, category: 'Subcontractor / Labor', date: '2026-06-24', vendor: 'Day laborer — patio crew', note: 'Nguyen patio', clientId: 'c9', jobId: null, recurring: false, frequency: null },
+  ],
 }
 
 function hj(clientId, serviceId, title, date, duration, amount, type = 'recurring') {
@@ -122,9 +134,14 @@ const jobToRow = (j) => { const r = { id: j.id, client_id: j.clientId, service_i
 const JOB_COLS = { clientId: 'client_id', serviceId: 'service_id', title: 'title', date: 'date', time: 'time', duration: 'duration', amount: 'amount', type: 'type', recurring: 'recurring', notes: 'notes' }
 const jobPatchToRow = (patch) => { const r = {}; for (const k in patch) if (JOB_COLS[k]) r[JOB_COLS[k]] = patch[k]; return r }
 
+const rowToExpense = (r) => ({ id: r.id, amount: Number(r.amount) || 0, category: r.category || '', date: r.date, vendor: r.vendor || '', note: r.note || '', clientId: r.client_id || null, jobId: r.job_id || null, recurring: !!r.recurring, frequency: r.frequency || null })
+const expenseToRow = (e) => ({ id: e.id, amount: Number(e.amount) || 0, category: e.category || null, date: e.date, vendor: e.vendor || null, note: e.note || null, client_id: e.clientId || null, job_id: e.jobId || null, recurring: !!e.recurring, frequency: e.recurring ? (e.frequency || null) : null })
+const EXPENSE_COLS = { amount: 'amount', category: 'category', date: 'date', vendor: 'vendor', note: 'note', clientId: 'client_id', jobId: 'job_id', recurring: 'recurring', frequency: 'frequency' }
+const expensePatchToRow = (patch) => { const r = {}; for (const k in patch) if (EXPENSE_COLS[k]) r[EXPENSE_COLS[k]] = patch[k]; return r }
+
 // ---- Shared in-memory store (source of truth for the UI in both modes) ----
 let listeners = []
-let state = isCloud ? { clients: [], jobs: [] } : loadLocal()
+let state = isCloud ? { clients: [], jobs: [], expenses: [] } : loadLocal()
 let loading = isCloud
 let loadStarted = false
 
@@ -137,12 +154,16 @@ function commit() {
 // Background Supabase writes (optimistic UI already updated). Errors are logged.
 const cloud = {
   async load() {
-    const [{ data: cRows, error: e1 }, { data: jRows, error: e2 }] = await Promise.all([
+    const [{ data: cRows, error: e1 }, { data: jRows, error: e2 }, { data: eRows, error: e3 }] = await Promise.all([
       supabase.from('clients').select('*').order('created_at', { ascending: true }),
       supabase.from('jobs').select('*'),
+      // expenses is optional — if the table hasn't been migrated yet this errors and
+      // we just fall back to an empty list so the rest of the app keeps working.
+      supabase.from('expenses').select('*'),
     ])
     if (e1 || e2) console.error('Load failed', e1 || e2)
-    state = { clients: (cRows || []).map(rowToClient), jobs: (jRows || []).map(rowToJob) }
+    if (e3) console.warn('Expenses not loaded (run supabase/add-expenses-table.sql):', e3.message)
+    state = { clients: (cRows || []).map(rowToClient), jobs: (jRows || []).map(rowToJob), expenses: (eRows || []).map(rowToExpense) }
     loading = false
     notify()
   },
@@ -157,6 +178,9 @@ const cloud = {
   deleteJob: (id) => supabase.from('jobs').delete().eq('id', id).then(({ error }) => error && console.error(error)),
   deleteJobs: (ids) => supabase.from('jobs').delete().in('id', ids).then(({ error }) => error && console.error(error)),
   updateJob: (id, patch) => supabase.from('jobs').update(jobPatchToRow(patch)).eq('id', id).then(({ error }) => error && console.error(error)),
+  insertExpense: (e) => supabase.from('expenses').insert(expenseToRow(e)).then(({ error }) => error && console.error(error)),
+  updateExpense: (id, patch) => supabase.from('expenses').update(expensePatchToRow(patch)).eq('id', id).then(({ error }) => error && console.error(error)),
+  deleteExpense: (id) => supabase.from('expenses').delete().eq('id', id).then(({ error }) => error && console.error(error)),
 }
 
 // Auto-refresh: the app fetches once on load and has no realtime subscription,
@@ -398,6 +422,22 @@ export function useStore() {
     return { removed: removeIds.length, added: created.length }
   }, [])
 
+  const addExpense = useCallback((expense) => {
+    const e = { ...expense, id: uid() }
+    state = { ...state, expenses: [e, ...(state.expenses || [])] }
+    commit(); if (isCloud) cloud.insertExpense(e)
+  }, [])
+
+  const updateExpense = useCallback((id, patch) => {
+    state = { ...state, expenses: (state.expenses || []).map((e) => (e.id === id ? { ...e, ...patch } : e)) }
+    commit(); if (isCloud) cloud.updateExpense(id, patch)
+  }, [])
+
+  const deleteExpense = useCallback((id) => {
+    state = { ...state, expenses: (state.expenses || []).filter((e) => e.id !== id) }
+    commit(); if (isCloud) cloud.deleteExpense(id)
+  }, [])
+
   const bulkImport = useCallback(({ clients: nc = [], jobs: nj = [] }) => {
     state = { ...state, clients: [...nc, ...state.clients], jobs: [...nj, ...state.jobs] }
     commit()
@@ -411,5 +451,6 @@ export function useStore() {
     addClient, updateClient, deleteClient, deleteClients, mergeClients, addNote, deleteNote, upsertService, removeService,
     addTask, toggleTask, deleteTask,
     addJob, deleteJob, updateJob, generateSeries, previewRecurring, generateRecurring, rescheduleSeries, bulkImport, reset,
+    addExpense, updateExpense, deleteExpense,
   }
 }
