@@ -12,6 +12,7 @@ export const SERVICES = [
   'Hardscape / Patio',
   'Tree & Shrub Care',
   'Seasonal Cleanup',
+  'Hauling / Trash Clean-out',
   'Irrigation',
   'Sod / Lawn Install',
 ]
