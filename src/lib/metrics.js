@@ -129,7 +129,7 @@ export function monthlyActual(jobs) {
 
 // Month-by-month timeline: actual (booked jobs) for past/current months, projected for future months.
 // Returns { series, ytd, projectedNext } where series items are { month, actual, projected }.
-export function revenueTimeline(jobs, clients, forwardMonths = 3) {
+export function revenueTimeline(jobs, clients) {
   const now = new Date()
   const curIdx = now.getFullYear() * 12 + now.getMonth()
   const actualMap = monthlyActual(jobs)
@@ -147,11 +147,16 @@ export function revenueTimeline(jobs, clients, forwardMonths = 3) {
     else pipeline += (l.amount || 0) * 0.4
   }))
 
-  // start at the earliest month with a job (but never after the current month)
-  const keys = Object.keys(actualMap).sort()
-  let startIdx = curIdx
-  if (keys.length) { const [y, m] = keys[0].split('-').map(Number); startIdx = Math.min(y * 12 + (m - 1), curIdx) }
-  const endIdx = curIdx + forwardMonths
+  // Window: this calendar year only — from the earliest job THIS YEAR through
+  // December. Ignoring prior years keeps stray old calendar events (synced in by
+  // mistake) from stretching the axis and hiding recent data.
+  const curYear = now.getFullYear()
+  const yearStart = curYear * 12 // January of the current year
+  const thisYearIdxs = Object.keys(actualMap)
+    .map((k) => { const [y, m] = k.split('-').map(Number); return y * 12 + (m - 1) })
+    .filter((idx) => idx >= yearStart && idx <= curIdx)
+  const startIdx = thisYearIdxs.length ? Math.min(...thisYearIdxs) : Math.min(curIdx, yearStart)
+  const endIdx = curYear * 12 + 11 // December of the current year
 
   const series = []
   let ytd = 0
@@ -161,7 +166,7 @@ export function revenueTimeline(jobs, clients, forwardMonths = 3) {
     const m = idx % 12
     const key = `${y}-${String(m + 1).padStart(2, '0')}`
     const d = new Date(y, m, 1)
-    const label = d.toLocaleDateString('en-US', m === 0 ? { month: 'short', year: '2-digit' } : { month: 'short' })
+    const label = d.toLocaleDateString('en-US', { month: 'short' })
     const future = idx > curIdx
     let actual = 0
     let projected = 0
@@ -169,10 +174,10 @@ export function revenueTimeline(jobs, clients, forwardMonths = 3) {
       const fo = idx - curIdx // 1, 2, 3 ...
       const share = fo <= 3 ? (remainingWon + pipeline) / 3 : 0 // spread remaining project work over the next 3 months
       projected = Math.round(mrr + share)
-      projectedNext += projected
+      if (fo <= 3) projectedNext += projected // KPI is specifically the next 3 months
     } else {
       actual = actualMap[key] || 0
-      if (y === now.getFullYear()) ytd += actual
+      if (y === curYear) ytd += actual
     }
     series.push({ month: label, actual: Math.round(actual), projected })
   }

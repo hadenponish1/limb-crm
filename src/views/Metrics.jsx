@@ -30,7 +30,7 @@ export default function Metrics({ clients, jobs, onOpenClient, scrollTo, onScrol
   const c = counts(clients)
   const mrr = monthlyRecurring(clients)
   const { activeProjects, pipeline } = projectRevenue(clients, 6)
-  const { series, ytd, projectedNext } = revenueTimeline(jobs, clients, 3)
+  const { series, ytd, projectedNext } = revenueTimeline(jobs, clients)
   const svc = byService(clients)
   const totalLines = c.recurring + c.project
   const mix = [
