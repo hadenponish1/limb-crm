@@ -284,6 +284,22 @@ input, select, textarea { font-family: inherit; font-size: 14px; }
 .cal-pill-time { font-variant-numeric: tabular-nums; color: var(--muted); font-size: 10px; }
 .cal-more { font-size: 10.5px; color: var(--muted); font-weight: 600; padding: 1px 5px; }
 
+/* Time-off banners (all-day, may span multiple days) */
+.cal-off {
+  display: block; width: 100%; text-align: left; border: none; cursor: pointer;
+  font-size: 10.5px; font-weight: 700; color: #fff; background: var(--oc);
+  border-radius: 0; padding: 1px 6px; margin-bottom: 3px; line-height: 1.5; min-height: 16px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.cal-off.start { border-top-left-radius: 5px; border-bottom-left-radius: 5px; }
+.cal-off.end { border-top-right-radius: 5px; border-bottom-right-radius: 5px; }
+.cal-off:hover { filter: brightness(0.93); }
+.week-off {
+  display: flex; align-items: center; gap: 5px; width: 100%; text-align: left; border: none; cursor: pointer;
+  font-size: 11px; font-weight: 700; color: #fff; background: var(--oc); border-radius: 6px; padding: 3px 7px;
+}
+.week-off:hover { filter: brightness(0.93); }
+
 /* Week view */
 .week-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
 .week-col { display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; min-height: 420px; }

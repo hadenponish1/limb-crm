@@ -103,6 +103,10 @@ const seed = {
     { id: 'x7', amount: 95, category: 'Fuel / Gas', date: '2026-07-08', vendor: 'Sheetz', note: '', clientId: null, jobId: null, recurring: false, frequency: null },
     { id: 'x8', amount: 1450, category: 'Subcontractor / Labor', date: '2026-06-24', vendor: 'Day laborer — patio crew', note: 'Nguyen patio', clientId: 'c9', jobId: null, recurring: false, frequency: null },
   ],
+  timeOff: [
+    { id: 'to1', title: 'Long weekend', type: 'vacation', start: dstr(4), end: dstr(7) },
+    { id: 'to2', title: '', type: 'holiday', start: dstr(18), end: dstr(18) },
+  ],
 }
 
 function hj(clientId, serviceId, title, date, duration, amount, type = 'recurring') {
@@ -139,9 +143,14 @@ const expenseToRow = (e) => ({ id: e.id, amount: Number(e.amount) || 0, category
 const EXPENSE_COLS = { amount: 'amount', category: 'category', date: 'date', vendor: 'vendor', note: 'note', clientId: 'client_id', jobId: 'job_id', recurring: 'recurring', frequency: 'frequency' }
 const expensePatchToRow = (patch) => { const r = {}; for (const k in patch) if (EXPENSE_COLS[k]) r[EXPENSE_COLS[k]] = patch[k]; return r }
 
+const rowToTimeOff = (r) => ({ id: r.id, title: r.title || '', type: r.type || 'vacation', start: r.start_date, end: r.end_date })
+const timeOffToRow = (t) => ({ id: t.id, title: t.title || null, type: t.type || 'vacation', start_date: t.start, end_date: t.end })
+const TIMEOFF_COLS = { title: 'title', type: 'type', start: 'start_date', end: 'end_date' }
+const timeOffPatchToRow = (patch) => { const r = {}; for (const k in patch) if (TIMEOFF_COLS[k]) r[TIMEOFF_COLS[k]] = patch[k]; return r }
+
 // ---- Shared in-memory store (source of truth for the UI in both modes) ----
 let listeners = []
-let state = isCloud ? { clients: [], jobs: [], expenses: [] } : loadLocal()
+let state = isCloud ? { clients: [], jobs: [], expenses: [], timeOff: [] } : loadLocal()
 let loading = isCloud
 let loadStarted = false
 
@@ -154,16 +163,18 @@ function commit() {
 // Background Supabase writes (optimistic UI already updated). Errors are logged.
 const cloud = {
   async load() {
-    const [{ data: cRows, error: e1 }, { data: jRows, error: e2 }, { data: eRows, error: e3 }] = await Promise.all([
+    const [{ data: cRows, error: e1 }, { data: jRows, error: e2 }, { data: eRows, error: e3 }, { data: tRows, error: e4 }] = await Promise.all([
       supabase.from('clients').select('*').order('created_at', { ascending: true }),
       supabase.from('jobs').select('*'),
-      // expenses is optional — if the table hasn't been migrated yet this errors and
-      // we just fall back to an empty list so the rest of the app keeps working.
+      // expenses / time_off are optional — if the table hasn't been migrated yet the
+      // query errors and we fall back to an empty list so the rest of the app works.
       supabase.from('expenses').select('*'),
+      supabase.from('time_off').select('*'),
     ])
     if (e1 || e2) console.error('Load failed', e1 || e2)
     if (e3) console.warn('Expenses not loaded (run supabase/add-expenses-table.sql):', e3.message)
-    state = { clients: (cRows || []).map(rowToClient), jobs: (jRows || []).map(rowToJob), expenses: (eRows || []).map(rowToExpense) }
+    if (e4) console.warn('Time off not loaded (run supabase/add-time-off-table.sql):', e4.message)
+    state = { clients: (cRows || []).map(rowToClient), jobs: (jRows || []).map(rowToJob), expenses: (eRows || []).map(rowToExpense), timeOff: (tRows || []).map(rowToTimeOff) }
     loading = false
     notify()
   },
@@ -181,6 +192,9 @@ const cloud = {
   insertExpense: (e) => supabase.from('expenses').insert(expenseToRow(e)).then(({ error }) => error && console.error(error)),
   updateExpense: (id, patch) => supabase.from('expenses').update(expensePatchToRow(patch)).eq('id', id).then(({ error }) => error && console.error(error)),
   deleteExpense: (id) => supabase.from('expenses').delete().eq('id', id).then(({ error }) => error && console.error(error)),
+  insertTimeOff: (t) => supabase.from('time_off').insert(timeOffToRow(t)).then(({ error }) => error && console.error(error)),
+  updateTimeOff: (id, patch) => supabase.from('time_off').update(timeOffPatchToRow(patch)).eq('id', id).then(({ error }) => error && console.error(error)),
+  deleteTimeOff: (id) => supabase.from('time_off').delete().eq('id', id).then(({ error }) => error && console.error(error)),
 }
 
 // Auto-refresh: the app fetches once on load and has no realtime subscription,
@@ -438,6 +452,22 @@ export function useStore() {
     commit(); if (isCloud) cloud.deleteExpense(id)
   }, [])
 
+  const addTimeOff = useCallback((block) => {
+    const t = { ...block, id: uid() }
+    state = { ...state, timeOff: [t, ...(state.timeOff || [])] }
+    commit(); if (isCloud) cloud.insertTimeOff(t)
+  }, [])
+
+  const updateTimeOff = useCallback((id, patch) => {
+    state = { ...state, timeOff: (state.timeOff || []).map((t) => (t.id === id ? { ...t, ...patch } : t)) }
+    commit(); if (isCloud) cloud.updateTimeOff(id, patch)
+  }, [])
+
+  const deleteTimeOff = useCallback((id) => {
+    state = { ...state, timeOff: (state.timeOff || []).filter((t) => t.id !== id) }
+    commit(); if (isCloud) cloud.deleteTimeOff(id)
+  }, [])
+
   const bulkImport = useCallback(({ clients: nc = [], jobs: nj = [] }) => {
     state = { ...state, clients: [...nc, ...state.clients], jobs: [...nj, ...state.jobs] }
     commit()
@@ -452,5 +482,6 @@ export function useStore() {
     addTask, toggleTask, deleteTask,
     addJob, deleteJob, updateJob, generateSeries, previewRecurring, generateRecurring, rescheduleSeries, bulkImport, reset,
     addExpense, updateExpense, deleteExpense,
+    addTimeOff, updateTimeOff, deleteTimeOff,
   }
 }

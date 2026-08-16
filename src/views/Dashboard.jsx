@@ -6,7 +6,7 @@ import { money } from '../lib/format'
 import { monthlyRecurring, bookedThisMonth, projectRevenue, counts } from '../lib/metrics'
 import { openTasks, dueStatus, dueLabel } from '../lib/tasks'
 
-export default function Dashboard({ clients, jobs, go, onOpenClient, toggleTask }) {
+export default function Dashboard({ clients, jobs, timeOff, go, onOpenClient, toggleTask }) {
   const mrr = monthlyRecurring(clients)
   const booked = bookedThisMonth(jobs)
   const { series } = projectRevenue(clients, 6)
@@ -76,8 +76,8 @@ export default function Dashboard({ clients, jobs, go, onOpenClient, toggleTask 
           <div className="card-title">This week</div>
           <button className="btn btn-ghost btn-sm" onClick={() => go('schedule')}>Open schedule</button>
         </div>
-        <MonthCalendar jobs={jobs} byId={byId} initialMode="week" lockMode compact
-          onDayClick={() => go('schedule')} onJobClick={() => go('schedule')} />
+        <MonthCalendar jobs={jobs} byId={byId} timeOff={timeOff} initialMode="week" lockMode compact
+          onDayClick={() => go('schedule')} onJobClick={() => go('schedule')} onTimeOffClick={() => go('schedule')} />
       </div>
     </div>
   )

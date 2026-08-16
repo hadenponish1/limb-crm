@@ -5,11 +5,12 @@ import MonthCalendar from '../components/MonthCalendar'
 import JobModal from '../components/JobModal'
 import JobDetail from '../components/JobDetail'
 import DayPanel from '../components/DayPanel'
+import TimeOffModal from '../components/TimeOffModal'
 import { money, dayParts, fmtTime, fmtDate } from '../lib/format'
 import { googleCalendarUrl, downloadICS, downloadBulkICS, upcomingCount } from '../lib/calendar'
 
 export default function Schedule(store) {
-  const { clients, jobs, addJob, deleteJob, updateJob, upsertService, generateSeries, previewRecurring, generateRecurring, onOpenClient } = store
+  const { clients, jobs, timeOff, addJob, deleteJob, updateJob, upsertService, generateSeries, previewRecurring, generateRecurring, addTimeOff, updateTimeOff, deleteTimeOff, onOpenClient } = store
   const [view, setView] = useState('calendar')
   const [addOpen, setAddOpen] = useState(false)
   const [addDate, setAddDate] = useState(null)
@@ -17,6 +18,7 @@ export default function Schedule(store) {
   const [syncOpen, setSyncOpen] = useState(false)
   const [detail, setDetail] = useState(null)
   const [dayPanel, setDayPanel] = useState(null) // ISO date | null
+  const [offModal, setOffModal] = useState(null) // { editing } | null
   const byId = Object.fromEntries(clients.map((c) => [c.id, c]))
 
   const openAdd = (date = null) => { setAddDate(date); setAddOpen(true) }
@@ -38,22 +40,24 @@ export default function Schedule(store) {
             </button>
           </div>
           <button className="btn btn-ghost" onClick={() => setGenOpen(true)}><Icon.repeat /> Auto-fill recurring</button>
+          <button className="btn btn-ghost" onClick={() => setOffModal({ editing: null })}><Icon.sun /> Block time off</button>
           <button className="btn btn-ghost" onClick={() => setSyncOpen(true)}><Icon.calendar /> Sync to Google</button>
           <button className="btn btn-primary" onClick={() => openAdd()}><Icon.plus /> Schedule job</button>
         </div>
       </div>
 
       {view === 'calendar'
-        ? <MonthCalendar jobs={jobs} byId={byId} onDayClick={setDayPanel} onJobClick={setDetail} />
+        ? <MonthCalendar jobs={jobs} byId={byId} timeOff={timeOff} onDayClick={setDayPanel} onJobClick={setDetail} onTimeOffClick={(b) => setOffModal({ editing: b })} />
         : <ListView jobs={jobs} byId={byId} onJobClick={setDetail} />}
 
       {dayPanel && (
-        <DayPanel date={dayPanel} jobs={jobs} byId={byId} deleteJob={deleteJob} updateJob={updateJob}
+        <DayPanel date={dayPanel} jobs={jobs} byId={byId} timeOff={timeOff} deleteJob={deleteJob} updateJob={updateJob}
           onClose={() => setDayPanel(null)}
           onJobClick={(j) => setDetail(j)}
           onNewJob={(date) => { setDayPanel(null); openAdd(date) }} />
       )}
-      {addOpen && <JobModal clients={clients} initialDate={addDate} onClose={() => setAddOpen(false)} addJob={addJob} upsertService={upsertService} generateSeries={generateSeries} />}
+      {addOpen && <JobModal clients={clients} initialDate={addDate} timeOff={timeOff} onClose={() => setAddOpen(false)} addJob={addJob} upsertService={upsertService} generateSeries={generateSeries} />}
+      {offModal && <TimeOffModal editing={offModal.editing} initialDate={dayPanel} onClose={() => setOffModal(null)} addTimeOff={addTimeOff} updateTimeOff={updateTimeOff} deleteTimeOff={deleteTimeOff} />}
       {genOpen && <GenerateModal previewRecurring={previewRecurring} generateRecurring={generateRecurring} onClose={() => setGenOpen(false)} />}
       {syncOpen && <SyncModal jobs={jobs} clients={clients} onClose={() => setSyncOpen(false)} />}
       {detail && <JobDetail job={detail} client={byId[detail.clientId]} updateJob={updateJob} onOpenClient={onOpenClient} onClose={() => setDetail(null)} onDelete={(id) => { deleteJob(id); setDetail(null) }} />}

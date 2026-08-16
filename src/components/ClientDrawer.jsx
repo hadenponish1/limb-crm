@@ -11,7 +11,7 @@ import { money, dayParts, fmtTime } from '../lib/format'
 import { clientMRR, clientLTV } from '../lib/metrics'
 import { googleCalendarUrl } from '../lib/calendar'
 
-export default function ClientDrawer({ client, onClose, updateClient, deleteClient, addNote, deleteNote, addTask, toggleTask, deleteTask, jobs, addJob, deleteJob, generateSeries, upsertService, rescheduleSeries }) {
+export default function ClientDrawer({ client, onClose, updateClient, deleteClient, addNote, deleteNote, addTask, toggleTask, deleteTask, jobs, timeOff = [], addJob, deleteJob, generateSeries, upsertService, rescheduleSeries }) {
   const [f, setF] = useState(client)
   const [dirty, setDirty] = useState(false)
   const [note, setNote] = useState('')
@@ -219,7 +219,7 @@ export default function ClientDrawer({ client, onClose, updateClient, deleteClie
 
       {sched && (
         <JobModal
-          clients={[f]} lockClientId={f.id}
+          clients={[f]} lockClientId={f.id} timeOff={timeOff}
           initialServiceId={sched.serviceId} initialJobType={sched.jobType}
           onClose={closeScheduler} addJob={addJob} upsertService={upsertService} generateSeries={generateSeries}
         />

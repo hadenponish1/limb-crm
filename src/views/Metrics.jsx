@@ -12,7 +12,7 @@ import { expensesYTD, monthlyRecurringExpense } from '../lib/expenses'
 
 const PIE = ['#6B7F65', '#c99a4b']
 
-export default function Metrics({ clients, jobs, expenses = [], onOpenClient, scrollTo, onScrolled, addJob, updateJob, deleteJob, upsertService, generateSeries }) {
+export default function Metrics({ clients, jobs, expenses = [], timeOff = [], onOpenClient, scrollTo, onScrolled, addJob, updateJob, deleteJob, upsertService, generateSeries }) {
   const [dayPanel, setDayPanel] = useState(null)
   const [detail, setDetail] = useState(null)   // job being edited
   const [addOpen, setAddOpen] = useState(false)
@@ -196,13 +196,13 @@ export default function Metrics({ clients, jobs, expenses = [], onOpenClient, sc
       </div>
 
       {dayPanel && (
-        <DayPanel date={dayPanel} jobs={jobs} byId={byId} deleteJob={deleteJob} updateJob={updateJob}
+        <DayPanel date={dayPanel} jobs={jobs} byId={byId} timeOff={timeOff} deleteJob={deleteJob} updateJob={updateJob}
           onClose={() => setDayPanel(null)}
           onJobClick={(j) => setDetail(j)}
           onNewJob={(date) => { setDayPanel(null); openAdd(date) }} />
       )}
       {detail && <JobDetail job={detail} client={byId[detail.clientId]} updateJob={updateJob} onOpenClient={onOpenClient} onClose={() => setDetail(null)} onDelete={(id) => { deleteJob(id); setDetail(null) }} />}
-      {addOpen && <JobModal clients={clients} initialDate={addDate} onClose={() => setAddOpen(false)} addJob={addJob} upsertService={upsertService} generateSeries={generateSeries} />}
+      {addOpen && <JobModal clients={clients} initialDate={addDate} timeOff={timeOff} onClose={() => setAddOpen(false)} addJob={addJob} upsertService={upsertService} generateSeries={generateSeries} />}
     </div>
   )
 }

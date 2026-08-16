@@ -24,7 +24,7 @@ const STAGE_BADGE = {
   lost: { cls: 'src', text: 'Lost' },
 }
 
-export default function Quotes({ clients, addClient, upsertService, removeService, addJob, generateSeries, onOpenClient }) {
+export default function Quotes({ clients, timeOff = [], addClient, upsertService, removeService, addJob, generateSeries, onOpenClient }) {
   const [filter, setFilter] = useState('quoted')
   const [sort, setSort] = useState({ key: 'startDate', dir: 'asc' })
   const [modal, setModal] = useState(null)       // { editing } for QuoteModal
@@ -133,6 +133,7 @@ export default function Quotes({ clients, addClient, upsertService, removeServic
       {schedule && (
         <JobModal
           clients={clients}
+          timeOff={timeOff}
           lockClientId={schedule.clientId}
           initialServiceId={schedule.id}
           initialJobType="oneoff"

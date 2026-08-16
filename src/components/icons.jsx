@@ -27,4 +27,5 @@ export const Icon = {
   pencil: (p) => (<svg viewBox="0 0 24 24" {...s} {...p}><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>),
   receipt: (p) => (<svg viewBox="0 0 24 24" {...s} {...p}><path d="M5 2v20l2.5-1.5L10 22l2-1.5L14 22l2.5-1.5L19 22V2l-2.5 1.5L14 2l-2 1.5L10 2 7.5 3.5z"/><path d="M9 8h6M9 12h6"/></svg>),
   tag: (p) => (<svg viewBox="0 0 24 24" {...s} {...p}><path d="M20.6 13.4 12 22l-9-9V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.2"/></svg>),
+  sun: (p) => (<svg viewBox="0 0 24 24" {...s} {...p}><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>),
 }

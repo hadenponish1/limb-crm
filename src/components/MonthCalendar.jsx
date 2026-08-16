@@ -2,12 +2,13 @@ import { useState } from 'react'
 import { Icon } from './icons'
 import { isoLocal } from '../lib/store'
 import { money, fmtTime } from '../lib/format'
+import { timeOffOnDate, timeoffType } from '../lib/timeoff'
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x }
 const pillColor = (job) => (job.type === 'project' ? '#c99a4b' : '#6B7F65')
 
-export default function MonthCalendar({ jobs, byId, onDayClick, onJobClick, initialMode = 'month', lockMode = false, compact = false }) {
+export default function MonthCalendar({ jobs, byId, timeOff = [], onDayClick, onJobClick, onTimeOffClick, initialMode = 'month', lockMode = false, compact = false }) {
   const [mode, setMode] = useState(initialMode) // month | week
   const [cursor, setCursor] = useState(() => new Date())
   const todayIso = isoLocal(new Date())
@@ -76,6 +77,16 @@ export default function MonthCalendar({ jobs, byId, onDayClick, onJobClick, init
               return (
                 <div key={i} className={`cal-cell${d.getMonth() === curMonth ? '' : ' out'}${isToday ? ' today' : ''}`} onClick={() => onDayClick(iso)}>
                   <div className="cal-date">{isToday ? <span className="cal-today-dot">{d.getDate()}</span> : d.getDate()}</div>
+                  {timeOffOnDate(timeOff, iso).map((b) => {
+                    const t = timeoffType(b.type)
+                    const showLabel = iso === b.start || d.getDay() === 0
+                    return (
+                      <button key={b.id} className={`cal-off${iso === b.start ? ' start' : ''}${iso === b.end ? ' end' : ''}`} style={{ ['--oc']: t.color }}
+                        title={`${b.title || t.label} — off`} onClick={(e) => { e.stopPropagation(); onTimeOffClick?.(b) }}>
+                        {showLabel ? (b.title || t.label) : ' '}
+                      </button>
+                    )
+                  })}
                   <div className="cal-pills">
                     {list.slice(0, 3).map((j) => (
                       <button key={j.id} className="cal-pill" style={{ ['--pc']: pillColor(j) }}
@@ -103,6 +114,15 @@ export default function MonthCalendar({ jobs, byId, onDayClick, onJobClick, init
                   <span className={`week-num${isToday ? ' on' : ''}`}>{d.getDate()}</span>
                 </button>
                 <div className="week-body" onClick={() => onDayClick(iso)}>
+                  {timeOffOnDate(timeOff, iso).map((b) => {
+                    const t = timeoffType(b.type)
+                    return (
+                      <button key={b.id} className="week-off" style={{ ['--oc']: t.color }}
+                        onClick={(e) => { e.stopPropagation(); onTimeOffClick?.(b) }}>
+                        <Icon.sun style={{ width: 11, height: 11 }} /> {b.title || t.label}
+                      </button>
+                    )
+                  })}
                   {list.map((j) => (
                     <button key={j.id} className="week-job" style={{ ['--pc']: pillColor(j) }}
                       onClick={(e) => { e.stopPropagation(); onJobClick(j) }}>

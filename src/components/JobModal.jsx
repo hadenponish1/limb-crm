@@ -1,14 +1,16 @@
 import { useState, useEffect, useRef } from 'react'
 import { Icon } from './icons'
 import { isoLocal, SERVICES, freqLabel } from '../lib/store'
+import { fmtDate } from '../lib/format'
 import FrequencyPicker from './FrequencyPicker'
 import ClientSearchSelect from './ClientSearchSelect'
 import { googleCalendarUrl } from '../lib/calendar'
+import { timeOffOnDate, timeoffType } from '../lib/timeoff'
 
 // Shared job scheduler used by both the Schedule calendar and the client drawer.
 // Pass `lockClientId` to fix it to one client (hides the client dropdown).
 export default function JobModal({
-  clients, lockClientId, initialClientId, initialDate, initialServiceId, initialJobType,
+  clients, lockClientId, initialClientId, initialDate, initialServiceId, initialJobType, timeOff = [],
   onClose, addJob, upsertService, generateSeries,
 }) {
   const startClient = lockClientId || initialClientId || clients[0]?.id || ''
@@ -104,6 +106,12 @@ export default function JobModal({
           <button type="button" className="icon-btn" onClick={onClose}><Icon.x /></button>
         </div>
         <div className="modal-body">
+          {timeOffOnDate(timeOff, date).map((b) => { const t = timeoffType(b.type); return (
+            <div key={b.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, background: '#fdf3e0', color: '#8a5a1e', border: '1px solid #f0dcae', borderRadius: 10, padding: '8px 12px', marginBottom: 14, fontSize: 12.5, lineHeight: 1.4 }}>
+              <Icon.bell style={{ width: 15, height: 15, flexShrink: 0, marginTop: 1 }} />
+              <span>Heads up — you have time off ({b.title ? `${b.title}, ` : ''}{t.label.toLowerCase()}) on {fmtDate(date)}. You can still schedule this.</span>
+            </div>
+          ) })}
           {!lockClientId && (
             <div className="field">
               <label>Client</label>

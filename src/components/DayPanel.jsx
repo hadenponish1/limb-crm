@@ -4,6 +4,7 @@ import { money, fmtTime, fmtDate } from '../lib/format'
 import { isoLocal } from '../lib/store'
 import { googleCalendarUrl } from '../lib/calendar'
 import { directionsUrl } from '../lib/maps'
+import { timeOffOnDate, timeoffType } from '../lib/timeoff'
 
 const HOUR_H = 56 // px per hour
 const SNAP = 15   // minutes
@@ -31,7 +32,8 @@ function layout(list) {
   return out
 }
 
-export default function DayPanel({ date, jobs, byId, onClose, onNewJob, onJobClick, deleteJob, updateJob }) {
+export default function DayPanel({ date, jobs, byId, timeOff = [], onClose, onNewJob, onJobClick, deleteJob, updateJob }) {
+  const off = timeOffOnDate(timeOff, date)
   const [drag, setDrag] = useState(null) // { id, startY, origMin, curMin, moved }
   const draggable = !!updateJob
   const todayIso = isoLocal(new Date())
@@ -82,6 +84,11 @@ export default function DayPanel({ date, jobs, byId, onClose, onNewJob, onJobCli
         </div>
 
         <div className="drawer-body" style={{ padding: '10px 14px' }}>
+          {off.map((b) => { const t = timeoffType(b.type); return (
+            <div key={b.id} style={{ display: 'flex', alignItems: 'center', gap: 8, background: t.color, color: '#fff', borderRadius: 8, padding: '7px 11px', marginBottom: 10, fontWeight: 700, fontSize: 13 }}>
+              <Icon.sun style={{ width: 15, height: 15 }} /> {b.title ? `${b.title} · ${t.label}` : `${t.label} — day off`}
+            </div>
+          ) })}
           {list.length === 0 && <div className="page-sub" style={{ fontSize: 13, padding: '10px 8px' }}>Nothing scheduled this day.</div>}
           <div className="tg" style={{ height: gridH }}>
             {Array.from({ length: hours + 1 }).map((_, i) => (
