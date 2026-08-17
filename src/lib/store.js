@@ -405,6 +405,55 @@ export function useStore() {
     return created.length
   }, [])
 
+  // Anchor each recurring series on its LAST existing visit so extending continues
+  // the exact rhythm (rather than re-deriving from createdAt, which could drift).
+  const lastVisitBySeries = () => {
+    const m = {}
+    state.jobs.forEach((j) => { if (j.serviceId) { const k = `${j.clientId}|${j.serviceId}`; if (!m[k] || j.date > m[k]) m[k] = j.date } })
+    return m
+  }
+
+  // Preview how many new visits extending every active recurring series through
+  // `targetISO` (inclusive) would create. Returns { total, perClient:[{client,count}] }.
+  const previewExtendThrough = useCallback((targetISO) => {
+    const today = new Date(); today.setHours(0, 0, 0, 0)
+    const horizon = new Date(targetISO + 'T00:00:00')
+    if (!targetISO || horizon < today) return { total: 0, perClient: [] }
+    const existing = new Set(state.jobs.map(jobKey))
+    const lastBy = lastVisitBySeries()
+    const perClient = []
+    let total = 0
+    state.clients.filter((c) => c.status === 'active').forEach((c) => {
+      let count = 0
+      c.services.filter((s) => s.type === 'recurring').forEach((line) => {
+        const anchor = lastBy[`${c.id}|${line.id}`]
+        count += visitsFor(c, line, today, horizon, anchor).filter((v) => !existing.has(jobKey(v))).length
+      })
+      if (count) perClient.push({ client: c, count })
+      total += count
+    })
+    return { total, perClient }
+  }, [])
+
+  // Extend every active recurring series through `targetISO` (inclusive), continuing
+  // each on its own cadence. Dedupes against existing visits. Returns count created.
+  const extendRecurringThrough = useCallback((targetISO) => {
+    const today = new Date(); today.setHours(0, 0, 0, 0)
+    const horizon = new Date(targetISO + 'T00:00:00')
+    if (!targetISO || horizon < today) return 0
+    const existing = new Set(state.jobs.map(jobKey))
+    const lastBy = lastVisitBySeries()
+    const created = []
+    state.clients.filter((c) => c.status === 'active').forEach((c) => {
+      c.services.filter((s) => s.type === 'recurring').forEach((line) => {
+        const anchor = lastBy[`${c.id}|${line.id}`]
+        visitsFor(c, line, today, horizon, anchor).forEach((v) => { if (!existing.has(jobKey(v))) { created.push({ ...v, id: uid() }); existing.add(jobKey(v)) } })
+      })
+    })
+    if (created.length) { state = { ...state, jobs: [...created, ...state.jobs] }; commit(); if (isCloud) cloud.insertJobs(created) }
+    return created.length
+  }, [])
+
   // Reflow a recurring service's FUTURE visits to its current cadence: keep past
   // visits, delete upcoming ones for this service, regenerate on the new frequency.
   const rescheduleSeries = useCallback((clientId, serviceId, weeks = 8) => {
@@ -480,7 +529,7 @@ export function useStore() {
     ...state, loading, cloud: isCloud,
     addClient, updateClient, deleteClient, deleteClients, mergeClients, addNote, deleteNote, upsertService, removeService,
     addTask, toggleTask, deleteTask,
-    addJob, deleteJob, updateJob, generateSeries, previewRecurring, generateRecurring, rescheduleSeries, bulkImport, reset,
+    addJob, deleteJob, updateJob, generateSeries, previewRecurring, generateRecurring, previewExtendThrough, extendRecurringThrough, rescheduleSeries, bulkImport, reset,
     addExpense, updateExpense, deleteExpense,
     addTimeOff, updateTimeOff, deleteTimeOff,
   }

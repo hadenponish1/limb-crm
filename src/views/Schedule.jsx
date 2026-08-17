@@ -6,11 +6,12 @@ import JobModal from '../components/JobModal'
 import JobDetail from '../components/JobDetail'
 import DayPanel from '../components/DayPanel'
 import TimeOffModal from '../components/TimeOffModal'
-import { money, dayParts, fmtTime, fmtDate } from '../lib/format'
+import { money, dayParts, fmtTime, fmtDate, fmtDuration } from '../lib/format'
+import { isoLocal } from '../lib/store'
 import { googleCalendarUrl, downloadICS, downloadBulkICS, upcomingCount } from '../lib/calendar'
 
 export default function Schedule(store) {
-  const { clients, jobs, timeOff, addJob, deleteJob, updateJob, upsertService, generateSeries, previewRecurring, generateRecurring, addTimeOff, updateTimeOff, deleteTimeOff, onOpenClient } = store
+  const { clients, jobs, timeOff, addJob, deleteJob, updateJob, upsertService, generateSeries, previewRecurring, generateRecurring, previewExtendThrough, extendRecurringThrough, addTimeOff, updateTimeOff, deleteTimeOff, onOpenClient } = store
   const [view, setView] = useState('calendar')
   const [addOpen, setAddOpen] = useState(false)
   const [addDate, setAddDate] = useState(null)
@@ -39,7 +40,7 @@ export default function Schedule(store) {
               <Icon.dashboard style={{ width: 15, height: 15, verticalAlign: '-3px', marginRight: 6 }} />List
             </button>
           </div>
-          <button className="btn btn-ghost" onClick={() => setGenOpen(true)}><Icon.repeat /> Auto-fill recurring</button>
+          <button className="btn btn-ghost" onClick={() => setGenOpen(true)}><Icon.repeat /> Extend recurring</button>
           <button className="btn btn-ghost" onClick={() => setOffModal({ editing: null })}><Icon.sun /> Block time off</button>
           <button className="btn btn-ghost" onClick={() => setSyncOpen(true)}><Icon.calendar /> Sync to Google</button>
           <button className="btn btn-primary" onClick={() => openAdd()}><Icon.plus /> Schedule job</button>
@@ -58,7 +59,7 @@ export default function Schedule(store) {
       )}
       {addOpen && <JobModal clients={clients} initialDate={addDate} timeOff={timeOff} onClose={() => setAddOpen(false)} addJob={addJob} upsertService={upsertService} generateSeries={generateSeries} />}
       {offModal && <TimeOffModal editing={offModal.editing} initialDate={dayPanel} onClose={() => setOffModal(null)} addTimeOff={addTimeOff} updateTimeOff={updateTimeOff} deleteTimeOff={deleteTimeOff} />}
-      {genOpen && <GenerateModal previewRecurring={previewRecurring} generateRecurring={generateRecurring} onClose={() => setGenOpen(false)} />}
+      {genOpen && <GenerateModal previewRecurring={previewRecurring} generateRecurring={generateRecurring} previewExtendThrough={previewExtendThrough} extendRecurringThrough={extendRecurringThrough} onClose={() => setGenOpen(false)} />}
       {syncOpen && <SyncModal jobs={jobs} clients={clients} onClose={() => setSyncOpen(false)} />}
       {detail && <JobDetail job={detail} client={byId[detail.clientId]} updateJob={updateJob} onOpenClient={onOpenClient} onClose={() => setDetail(null)} onDelete={(id) => { deleteJob(id); setDetail(null) }} />}
     </div>
@@ -90,7 +91,7 @@ function ListView({ jobs, byId, onJobClick }) {
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontWeight: 600 }}>{cl?.name} — {j.title} {j.recurring && <span className="badge recurring" style={{ marginLeft: 6 }}><Icon.repeat style={{ width: 11, height: 11 }} /> auto</span>}</div>
                     <div className="page-sub" style={{ display: 'flex', gap: 14, marginTop: 3, fontSize: 12.5 }}>
-                      <span><Icon.clock style={{ width: 13, height: 13, verticalAlign: '-2px' }} /> {fmtTime(j.time)} · {j.duration}m</span>
+                      <span><Icon.clock style={{ width: 13, height: 13, verticalAlign: '-2px' }} /> {fmtTime(j.time)} · {fmtDuration(j.duration)}</span>
                       {cl?.address && <span><Icon.pin style={{ width: 13, height: 13, verticalAlign: '-2px' }} /> {cl.address}</span>}
                     </div>
                   </div>
@@ -106,18 +107,24 @@ function ListView({ jobs, byId, onJobClick }) {
   )
 }
 
-function GenerateModal({ previewRecurring, generateRecurring, onClose }) {
+function GenerateModal({ previewRecurring, generateRecurring, previewExtendThrough, extendRecurringThrough, onClose }) {
+  const [mode, setMode] = useState('date') // date | weeks
   const [weeks, setWeeks] = useState(8)
+  const [target, setTarget] = useState(() => { const d = new Date(); d.setMonth(d.getMonth() + 3); return isoLocal(d) })
   const [done, setDone] = useState(null)
-  const preview = previewRecurring(weeks)
+  const todayISO = isoLocal(new Date())
+
+  const preview = mode === 'date' ? previewExtendThrough(target) : previewRecurring(weeks)
+  const run = () => setDone(mode === 'date' ? extendRecurringThrough(target) : generateRecurring(weeks))
+  const targetLabel = mode === 'date' && target ? fmtDate(target, { month: 'long', day: 'numeric', year: 'numeric' }) : ''
 
   return (
     <div className="overlay" onClick={onClose}>
       <div className="modal" style={{ maxWidth: 480 }} onClick={(e) => e.stopPropagation()}>
         <div className="modal-head">
           <div>
-            <div className="card-title">Auto-fill recurring visits</div>
-            <div className="page-sub">Create jobs from every recurring service across active clients</div>
+            <div className="card-title">Extend recurring visits</div>
+            <div className="page-sub">Top up every recurring service across active clients — visits continue on their own cadence</div>
           </div>
           <button className="icon-btn" onClick={onClose}><Icon.x /></button>
         </div>
@@ -125,14 +132,28 @@ function GenerateModal({ previewRecurring, generateRecurring, onClose }) {
           {done === null ? (
             <>
               <div className="field">
-                <label>Generate visits for the next…</label>
+                <label>Extend</label>
                 <div className="seg">
-                  {[4, 8, 12].map((w) => <button key={w} type="button" className={weeks === w ? 'on' : ''} onClick={() => setWeeks(w)}>{w} weeks</button>)}
+                  <button type="button" className={mode === 'date' ? 'on' : ''} onClick={() => setMode('date')}>Through a date</button>
+                  <button type="button" className={mode === 'weeks' ? 'on' : ''} onClick={() => setMode('weeks')}>Next N weeks</button>
                 </div>
               </div>
+              {mode === 'date' ? (
+                <div className="field">
+                  <label>Through this date (inclusive)</label>
+                  <input type="date" value={target} min={todayISO} onChange={(e) => setTarget(e.target.value)} />
+                </div>
+              ) : (
+                <div className="field">
+                  <label>Generate visits for the next…</label>
+                  <div className="seg">
+                    {[4, 8, 12].map((w) => <button key={w} type="button" className={weeks === w ? 'on' : ''} onClick={() => setWeeks(w)}>{w} weeks</button>)}
+                  </div>
+                </div>
+              )}
               <div style={{ background: '#fff', border: '1px solid var(--line)', borderRadius: 12, padding: '14px 16px', marginTop: 6 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: preview.perClient.length ? 12 : 0 }}>
-                  <span style={{ fontWeight: 600 }}>New visits to create</span>
+                  <span style={{ fontWeight: 600 }}>New visits to create{targetLabel ? ` through ${targetLabel}` : ''}</span>
                   <span style={{ fontFamily: 'var(--font-serif)', fontSize: 26, fontWeight: 600, color: 'var(--moss)' }}>{preview.total}</span>
                 </div>
                 {preview.perClient.map(({ client, count }) => (
@@ -140,7 +161,7 @@ function GenerateModal({ previewRecurring, generateRecurring, onClose }) {
                     <span>{client.name}</span><span>{count} visit{count !== 1 ? 's' : ''}</span>
                   </div>
                 ))}
-                {preview.total === 0 && <div className="page-sub" style={{ marginTop: 4 }}>All recurring visits in this window already exist. Nothing to add.</div>}
+                {preview.total === 0 && <div className="page-sub" style={{ marginTop: 4 }}>Every recurring visit through this window already exists. Nothing to add.</div>}
               </div>
               <div className="page-sub" style={{ marginTop: 12, fontSize: 12.5 }}>Covers every recurring service line. Existing visits won't be duplicated.</div>
             </>
@@ -158,7 +179,7 @@ function GenerateModal({ previewRecurring, generateRecurring, onClose }) {
           {done === null ? (
             <>
               <button className="btn btn-ghost" onClick={onClose}>Cancel</button>
-              <button className="btn btn-primary" onClick={() => setDone(generateRecurring(weeks))} disabled={preview.total === 0}><Icon.repeat /> Generate {preview.total || ''} visits</button>
+              <button className="btn btn-primary" onClick={run} disabled={preview.total === 0}><Icon.repeat /> Add {preview.total || ''} visit{preview.total !== 1 ? 's' : ''}</button>
             </>
           ) : (
             <button className="btn btn-primary" onClick={onClose}>Done</button>

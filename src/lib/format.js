@@ -18,6 +18,15 @@ export function dayParts(iso) {
   }
 }
 
+// Minutes -> friendly duration, e.g. 240 -> "4h", 90 -> "1h 30m", 45 -> "45m"
+export function fmtDuration(min) {
+  const m = Math.round(Number(min) || 0)
+  if (m < 60) return `${m}m`
+  const h = Math.floor(m / 60)
+  const rem = m % 60
+  return rem ? `${h}h ${rem}m` : `${h}h`
+}
+
 export function fmtTime(t) {
   if (!t) return ''
   const [h, m] = t.split(':').map(Number)

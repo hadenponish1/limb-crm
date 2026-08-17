@@ -1,6 +1,7 @@
 import { Icon } from './icons'
 import { SERVICES } from '../lib/store'
 import FrequencyPicker from './FrequencyPicker'
+import HoursField from './HoursField'
 
 // Editor for a single service line. `line` is the object; `onChange(next)` patches it.
 export default function ServiceLineFields({ line, onChange }) {
@@ -49,7 +50,7 @@ export default function ServiceLineFields({ line, onChange }) {
       {line.type === 'recurring' && (
         <div className="field-row">
           <div className="field"><label>Preferred time</label><input type="time" value={line.time || '08:00'} onChange={(e) => set('time', e.target.value)} /></div>
-          <div className="field"><label>Visit length (min)</label><input type="number" value={line.duration || 60} onChange={(e) => set('duration', Number(e.target.value) || 60)} /></div>
+          <div className="field"><label>Visit length (hours)</label><HoursField minutes={line.duration || 60} onMinutes={(m) => set('duration', m || 60)} /></div>
         </div>
       )}
     </>

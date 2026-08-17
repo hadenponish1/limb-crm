@@ -3,6 +3,7 @@ import { Icon } from './icons'
 import { money } from '../lib/format'
 import { googleCalendarUrl, downloadICS } from '../lib/calendar'
 import { directionsUrl } from '../lib/maps'
+import HoursField from './HoursField'
 
 // Edit a single job (used by both Schedule and Metrics day panels).
 export default function JobDetail({ job, client, onClose, onDelete, updateJob, onOpenClient }) {
@@ -53,7 +54,7 @@ export default function JobDetail({ job, client, onClose, onDelete, updateJob, o
             <div className="field"><label>Start time</label><input type="time" value={f.time} onChange={set('time')} /></div>
           </div>
           <div className="field-row">
-            <div className="field"><label>Duration (min)</label><input type="number" value={f.duration} onChange={set('duration')} /></div>
+            <div className="field"><label>Duration (hours)</label><HoursField minutes={Number(f.duration) || 0} onMinutes={(m) => { setF((p) => ({ ...p, duration: m })); setDirty(true) }} /></div>
             <div className="field"><label>Amount</label><input type="number" step="0.01" value={f.amount} onChange={set('amount')} /></div>
           </div>
           <div className="field"><label>Notes</label><textarea value={f.notes} onChange={set('notes')} rows={3} placeholder="e.g. mulch the front beds, pull weeds in back, gate code 1234" /></div>

@@ -4,6 +4,7 @@ import { isoLocal, SERVICES, freqLabel } from '../lib/store'
 import { fmtDate } from '../lib/format'
 import FrequencyPicker from './FrequencyPicker'
 import ClientSearchSelect from './ClientSearchSelect'
+import HoursField from './HoursField'
 import { googleCalendarUrl } from '../lib/calendar'
 import { timeOffOnDate, timeoffType } from '../lib/timeoff'
 
@@ -174,7 +175,7 @@ export default function JobModal({
                 <div className="field"><label>Start time</label><input type="time" value={time} onChange={(e) => setTime(e.target.value)} /></div>
               </div>
               <div className="field-row">
-                <div className="field"><label>Duration (min)</label><input type="number" value={duration} onChange={(e) => setDuration(e.target.value)} /></div>
+                <div className="field"><label>Duration (hours)</label><HoursField minutes={Number(duration) || 0} onMinutes={setDuration} /></div>
                 <div className="field"><label>Amount</label><input type="number" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0" required /></div>
               </div>
               <div className="field"><label>Notes</label><textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} placeholder="e.g. mulch the front beds, pull weeds in back, gate code 1234" /></div>
