@@ -454,8 +454,10 @@ export function useStore() {
     return created.length
   }, [])
 
-  // Reflow a recurring service's FUTURE visits to its current cadence: keep past
-  // visits, delete upcoming ones for this service, regenerate on the new frequency.
+  // Reflow a recurring service's FUTURE visits to a cadence: keep past visits, delete
+  // upcoming ones for this service, regenerate on the current frequency — ANCHORED ON
+  // THE LAST COMPLETED (most-recent past) VISIT, so the next visit falls exactly one
+  // interval after it (e.g. last done 8/17 + bi-weekly = 8/31, skipping 8/24).
   const rescheduleSeries = useCallback((clientId, serviceId, weeks = 8) => {
     const client = state.clients.find((c) => c.id === clientId)
     const line = client?.services.find((s) => s.id === serviceId)
@@ -466,6 +468,10 @@ export function useStore() {
     // future jobs for this service get replaced
     const removeIds = state.jobs.filter((j) => j.clientId === clientId && j.serviceId === serviceId && j.date >= todayIso).map((j) => j.id)
     const furthest = state.jobs.filter((j) => j.clientId === clientId && j.serviceId === serviceId).reduce((mx, j) => (j.date > mx ? j.date : mx), todayIso)
+    // most recent past visit for this service — the anchor the new cadence counts from
+    const lastCompleted = state.jobs
+      .filter((j) => j.clientId === clientId && j.serviceId === serviceId && j.date < todayIso)
+      .reduce((mx, j) => (j.date > mx ? j.date : mx), '')
 
     // regenerate horizon covers at least the old furthest visit
     let horizon = new Date(today); horizon.setDate(horizon.getDate() + weeks * 7)
@@ -476,7 +482,9 @@ export function useStore() {
     const remaining = state.jobs.filter((j) => !removeSet.has(j.id))
     const existing = new Set(remaining.map(jobKey))
     const created = []
-    visitsFor(client, line, today, horizon).forEach((v) => {
+    // anchor on the last completed visit when there is one; else fall back to the
+    // service's start / client createdAt (a brand-new series with no past visits).
+    visitsFor(client, line, today, horizon, lastCompleted || undefined).forEach((v) => {
       if (!existing.has(jobKey(v))) { created.push({ ...v, id: uid() }); existing.add(jobKey(v)) }
     })
     state = { ...state, jobs: [...created, ...remaining] }
