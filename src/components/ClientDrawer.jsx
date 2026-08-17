@@ -141,8 +141,8 @@ export default function ClientDrawer({ client, onClose, updateClient, deleteClie
                           <Icon.calendar /> Schedule{lineJobs ? ` (${lineJobs})` : ''}
                         </button>
                         {s.type === 'recurring' && rescheduleSeries && (
-                          <button className="btn btn-ghost btn-sm" onClick={() => openReschedule(s.id)} title="Replace upcoming visits with the current cadence">
-                            <Icon.repeat /> Reschedule
+                          <button className="btn btn-ghost btn-sm" onClick={() => openReschedule(s.id)} title="Change how often this visit repeats and reflow upcoming visits">
+                            <Icon.repeat /> Change cadence
                           </button>
                         )}
                         <button className="btn btn-ghost btn-sm" style={{ color: 'var(--danger)', marginLeft: 'auto' }} onClick={() => removeLine(s.id)}><Icon.trash /> Remove</button>
@@ -226,7 +226,7 @@ export default function ClientDrawer({ client, onClose, updateClient, deleteClie
       )}
 
       {resched && (
-        <RescheduleModal client={client} serviceId={resched} jobs={jobs} reschedule={rescheduleSeries} onClose={() => { setDirty(false); setResched(null) }} />
+        <RescheduleModal client={client} serviceId={resched} jobs={jobs} reschedule={rescheduleSeries} upsertService={upsertService} onClose={() => { setDirty(false); setResched(null) }} />
       )}
     </div>
   )
