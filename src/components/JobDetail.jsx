@@ -7,12 +7,18 @@ import HoursField from './HoursField'
 
 // Edit a single job (used by both Schedule and Metrics day panels).
 export default function JobDetail({ job, client, onClose, onDelete, updateJob, onOpenClient }) {
-  const [f, setF] = useState({ title: job.title || '', date: job.date, time: job.time || '08:00', duration: job.duration || 60, amount: job.amount ?? 0, notes: job.notes || '' })
+  const [f, setF] = useState({ title: job.title || '', date: job.date, time: job.time || '08:00', duration: job.duration || 60, amount: job.amount ?? 0, notes: job.notes || '', type: job.type || 'project' })
   const [dirty, setDirty] = useState(false)
   const set = (k) => (e) => { setF({ ...f, [k]: e.target.value }); setDirty(true) }
+  const setType = (t) => { setF((p) => ({ ...p, type: t })); setDirty(true) }
 
   function save() {
-    const patch = { title: f.title, date: f.date, time: f.time, duration: Number(f.duration) || 60, amount: Number(f.amount) || 0 }
+    // estimates are calendar-only (no revenue); keep the recurring flag in sync with type
+    const patch = {
+      title: f.title, date: f.date, time: f.time, duration: Number(f.duration) || 60,
+      type: f.type, recurring: f.type === 'recurring',
+      amount: f.type === 'estimate' ? 0 : Number(f.amount) || 0,
+    }
     // only send notes when it changed, so time/amount edits don't require the
     // notes column to exist yet (supabase/add-job-notes.sql)
     if (f.notes !== (job.notes || '')) patch.notes = f.notes
@@ -49,14 +55,27 @@ export default function JobDetail({ job, client, onClose, onDelete, updateJob, o
         </div>
         <div className="modal-body">
           <div className="field"><label>Job description</label><input value={f.title} onChange={set('title')} placeholder="e.g. Lawn Maintenance" /></div>
+          <div className="field">
+            <label>Job type</label>
+            <div className="seg">
+              <button type="button" className={f.type === 'recurring' ? 'on' : ''} onClick={() => setType('recurring')}><Icon.repeat style={{ width: 14, height: 14, verticalAlign: '-2px', marginRight: 6 }} />Recurring</button>
+              <button type="button" className={f.type === 'project' ? 'on' : ''} onClick={() => setType('project')}><Icon.briefcase style={{ width: 14, height: 14, verticalAlign: '-2px', marginRight: 6 }} />One-off</button>
+              <button type="button" className={f.type === 'estimate' ? 'on' : ''} onClick={() => setType('estimate')}><Icon.quote style={{ width: 14, height: 14, verticalAlign: '-2px', marginRight: 6 }} />Estimate</button>
+            </div>
+            {f.type === 'estimate' && <div className="page-sub" style={{ marginTop: 6, fontSize: 12 }}>Estimates are a calendar block only — they don't count as revenue.</div>}
+          </div>
           <div className="field-row">
             <div className="field"><label>Date</label><input type="date" value={f.date} onChange={set('date')} /></div>
             <div className="field"><label>Start time</label><input type="time" value={f.time} onChange={set('time')} /></div>
           </div>
-          <div className="field-row">
+          {f.type === 'estimate' ? (
             <div className="field"><label>Duration (hours)</label><HoursField minutes={Number(f.duration) || 0} onMinutes={(m) => { setF((p) => ({ ...p, duration: m })); setDirty(true) }} /></div>
-            <div className="field"><label>Amount</label><input type="number" step="0.01" value={f.amount} onChange={set('amount')} /></div>
-          </div>
+          ) : (
+            <div className="field-row">
+              <div className="field"><label>Duration (hours)</label><HoursField minutes={Number(f.duration) || 0} onMinutes={(m) => { setF((p) => ({ ...p, duration: m })); setDirty(true) }} /></div>
+              <div className="field"><label>Amount</label><input type="number" step="0.01" value={f.amount} onChange={set('amount')} /></div>
+            </div>
+          )}
           <div className="field"><label>Notes</label><textarea value={f.notes} onChange={set('notes')} rows={3} placeholder="e.g. mulch the front beds, pull weeds in back, gate code 1234" /></div>
           {job.recurring && <div className="detail-row" style={{ color: 'var(--green)', borderBottom: 'none', paddingTop: 0 }}><Icon.repeat /> <span>Auto-generated recurring visit</span></div>}
           {client?.address && (
