@@ -154,6 +154,7 @@ input, select, textarea { font-family: inherit; font-size: 14px; }
 }
 .badge.recurring { background: #e6efe0; color: #3f6b3d; }
 .badge.project { background: #f3ead6; color: #9a6f26; }
+.badge.estimate { background: #ece7f3; color: #6b5b8a; }
 .badge.lead { background: #e8eef3; color: #3d5a7a; }
 .badge.active { background: #e6efe0; color: #3f6b3d; }
 .badge.dot::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
@@ -408,6 +409,7 @@ input, select, textarea { font-family: inherit; font-size: 14px; }
   box-shadow: 0 1px 2px rgba(27,42,28,.08); touch-action: none; user-select: none;
 }
 .tg-event.project { background: color-mix(in srgb, #c99a4b 20%, #fff); border-left-color: #c99a4b; }
+.tg-event.estimate { background: color-mix(in srgb, #7a6b8a 20%, #fff); border-left-color: #7a6b8a; }
 .tg-event.done { background: #f0eee7; border-left-color: #c3bfae; }
 .tg-event.dragging { cursor: grabbing; box-shadow: var(--shadow-lg); z-index: 5; opacity: .95; }
 .tg-event-time { font-size: 10px; font-weight: 700; color: var(--muted); font-variant-numeric: tabular-nums; line-height: 1.2; }

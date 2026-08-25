@@ -105,7 +105,7 @@ export default function DayPanel({ date, jobs, byId, timeOff = [], onClose, onNe
                 const cl = byId[j.clientId]
                 const gcal = googleCalendarUrl({ title: `${cl?.name || 'Job'} — ${j.title}`, dateISO: j.date, time: minToTime(s), durationMin: j.duration, details: j.title, location: cl?.address || '' })
                 return (
-                  <div key={j.id} className={`tg-event${past ? ' done' : ''}${j.type === 'project' ? ' project' : ''}${dragging ? ' dragging' : ''}`}
+                  <div key={j.id} className={`tg-event${past ? ' done' : ''}${j.type === 'project' ? ' project' : j.type === 'estimate' ? ' estimate' : ''}${dragging ? ' dragging' : ''}`}
                     title={j.notes ? `${j.title}\n${j.notes}` : undefined}
                     style={{ top, height, left: `calc(${(item.col * 100) / item.cols}% + 1px)`, width: `calc(${100 / item.cols}% - 3px)`, cursor: draggable ? undefined : (onJobClick ? 'pointer' : 'default') }}
                     onPointerDown={draggable ? (e) => onDown(e, item) : undefined}

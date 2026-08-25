@@ -65,6 +65,14 @@ export default function JobModal({
       serviceId = upsertService(clientId, line)
       const n = generateSeries(clientId, serviceId, weeks, date)
       setResult({ recurring: true, n })
+    } else if (jobType === 'estimate') {
+      // A calendar-only block to go build an estimate — no service line, no revenue.
+      const job = { clientId, title: title || 'Estimate — site visit', date, time, duration: Number(duration) || 60, amount: 0, type: 'estimate', notes }
+      addJob(job)
+      if (pushGoogle) {
+        window.open(googleCalendarUrl({ title: `${client?.name || 'Estimate'} — ${job.title}`, dateISO: date, time, durationMin: job.duration, details: job.title, location: client?.address || '' }), '_blank')
+      }
+      onClose()
     } else {
       if (serviceSel === '__new__') {
         serviceId = upsertService(clientId, { service: svcName, type: 'project', stage: 'won', amount: Number(amount) || 0 })
@@ -129,21 +137,28 @@ export default function JobModal({
               <button type="button" className={jobType === 'oneoff' ? 'on' : ''} onClick={() => setJobType('oneoff')}>
                 <Icon.briefcase style={{ width: 14, height: 14, verticalAlign: '-2px', marginRight: 6 }} />One-off
               </button>
+              <button type="button" className={jobType === 'estimate' ? 'on' : ''} onClick={() => setJobType('estimate')}>
+                <Icon.quote style={{ width: 14, height: 14, verticalAlign: '-2px', marginRight: 6 }} />Estimate
+              </button>
             </div>
             <div className="page-sub" style={{ marginTop: 6, fontSize: 12 }}>
-              {jobType === 'recurring' ? 'Auto-generates visits on a cadence and saves as a recurring service.' : 'Creates a single job and logs it as a project on the client.'}
+              {jobType === 'recurring' ? 'Auto-generates visits on a cadence and saves as a recurring service.'
+                : jobType === 'estimate' ? 'Blocks time on the calendar to visit the site and build an estimate — no revenue.'
+                : 'Creates a single job and logs it as a project on the client.'}
             </div>
           </div>
 
-          <div className="field">
-            <label>Service</label>
-            <select value={serviceSel} onChange={(e) => setServiceSel(e.target.value)}>
-              {matching.map((s) => <option key={s.id} value={s.id}>{s.service}{s.type === 'recurring' ? ` · ${freqLabel(s.frequency).toLowerCase()}` : ''}</option>)}
-              <option value="__new__">➕ New {jobType === 'recurring' ? 'recurring' : 'one-off'} service…</option>
-            </select>
-          </div>
+          {jobType !== 'estimate' && (
+            <div className="field">
+              <label>Service</label>
+              <select value={serviceSel} onChange={(e) => setServiceSel(e.target.value)}>
+                {matching.map((s) => <option key={s.id} value={s.id}>{s.service}{s.type === 'recurring' ? ` · ${freqLabel(s.frequency).toLowerCase()}` : ''}</option>)}
+                <option value="__new__">➕ New {jobType === 'recurring' ? 'recurring' : 'one-off'} service…</option>
+              </select>
+            </div>
+          )}
 
-          {serviceSel === '__new__' && (
+          {jobType !== 'estimate' && serviceSel === '__new__' && (
             <div className="field">
               <label>Service type</label>
               <select value={svcName} onChange={(e) => setSvcName(e.target.value)}>{SERVICES.map((s) => <option key={s}>{s}</option>)}</select>
@@ -167,6 +182,20 @@ export default function JobModal({
                 <div className="seg">{[4, 8, 12].map((w) => <button key={w} type="button" className={weeks === w ? 'on' : ''} onClick={() => setWeeks(w)}>{w} weeks</button>)}</div>
               </div>
             </>
+          ) : jobType === 'estimate' ? (
+            <>
+              <div className="field"><label>What's this visit?</label><input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Estimate — site visit" /></div>
+              <div className="field-row">
+                <div className="field"><label>Date</label><input type="date" value={date} onChange={(e) => setDate(e.target.value)} required /></div>
+                <div className="field"><label>Start time</label><input type="time" value={time} onChange={(e) => setTime(e.target.value)} /></div>
+              </div>
+              <div className="field"><label>Duration (hours)</label><HoursField minutes={Number(duration) || 0} onMinutes={setDuration} /></div>
+              <div className="field"><label>Notes</label><textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} placeholder="e.g. walk the backyard, discuss paver patio scope, take measurements" /></div>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 9, fontSize: 13.5, fontWeight: 500, cursor: 'pointer' }}>
+                <input type="checkbox" checked={pushGoogle} onChange={(e) => setPushGoogle(e.target.checked)} style={{ width: 16, height: 16 }} />
+                Open in Google Calendar after saving
+              </label>
+            </>
           ) : (
             <>
               <div className="field"><label>Job description</label><input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={svcName} /></div>
@@ -188,7 +217,7 @@ export default function JobModal({
         </div>
         <div className="modal-foot">
           <button type="button" className="btn btn-ghost" onClick={onClose}>Cancel</button>
-          <button type="submit" className="btn btn-primary">{jobType === 'recurring' ? 'Generate visits' : 'Save job'}</button>
+          <button type="submit" className="btn btn-primary">{jobType === 'recurring' ? 'Generate visits' : jobType === 'estimate' ? 'Block estimate time' : 'Save job'}</button>
         </div>
       </form>
     </div>

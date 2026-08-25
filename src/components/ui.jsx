@@ -14,11 +14,9 @@ export function Kpi({ label, value, meta, metaClass, icon }) {
 }
 
 export function TypeBadge({ type }) {
-  return type === 'recurring' ? (
-    <span className="badge recurring"><Icon.repeat style={{ width: 12, height: 12 }} /> Recurring</span>
-  ) : (
-    <span className="badge project"><Icon.briefcase style={{ width: 12, height: 12 }} /> Project</span>
-  )
+  if (type === 'estimate') return <span className="badge estimate"><Icon.quote style={{ width: 12, height: 12 }} /> Estimate</span>
+  if (type === 'project') return <span className="badge project"><Icon.briefcase style={{ width: 12, height: 12 }} /> Project</span>
+  return <span className="badge recurring"><Icon.repeat style={{ width: 12, height: 12 }} /> Recurring</span>
 }
 
 export function StatusBadge({ status }) {

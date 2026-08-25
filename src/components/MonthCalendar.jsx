@@ -1,12 +1,12 @@
 import { useState } from 'react'
 import { Icon } from './icons'
-import { isoLocal } from '../lib/store'
+import { isoLocal, jobColor } from '../lib/store'
 import { money, fmtTime } from '../lib/format'
 import { timeOffOnDate, timeoffType } from '../lib/timeoff'
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x }
-const pillColor = (job) => (job.type === 'project' ? '#c99a4b' : '#6B7F65')
+const pillColor = (job) => jobColor(job.type)
 
 export default function MonthCalendar({ jobs, byId, timeOff = [], onDayClick, onJobClick, onTimeOffClick, initialMode = 'month', lockMode = false, compact = false }) {
   const [mode, setMode] = useState(initialMode) // month | week
@@ -142,6 +142,7 @@ export default function MonthCalendar({ jobs, byId, timeOff = [], onDayClick, on
       <div className="legend" style={{ marginTop: 16 }}>
         <span><i style={{ background: '#6B7F65' }} />Recurring visit</span>
         <span><i style={{ background: '#c99a4b' }} />One-off / project</span>
+        <span><i style={{ background: '#7a6b8a' }} />Estimate</span>
         <span style={{ marginLeft: 'auto', color: 'var(--muted)' }}>Click a day to see its jobs · click a job to view</span>
       </div>
     </div>

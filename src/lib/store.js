@@ -17,6 +17,15 @@ export const SERVICES = [
   'Sod / Lawn Install',
 ]
 
+// Job types shown on the calendar / day view, each with its own color so recurring
+// visits, one-off projects, and estimate site-visits are easy to tell apart.
+export const JOB_TYPES = {
+  recurring: { label: 'Recurring', color: '#6B7F65' },   // green
+  project: { label: 'One-off / project', color: '#c99a4b' }, // gold
+  estimate: { label: 'Estimate', color: '#7a6b8a' },     // purple
+}
+export const jobColor = (type) => (JOB_TYPES[type] || JOB_TYPES.recurring).color
+
 // Recurring cadence is stored as { every: N, unit: 'week' | 'month' }.
 // Legacy string values ('weekly' | 'biweekly' | 'monthly') are still accepted.
 export const FREQ_PRESETS = [
@@ -90,6 +99,7 @@ const seed = {
     hj('c4', 's4a', 'Mulch & Beds', '2026-06-10', 120, 240), hj('c5', 's5b', 'Sod / Lawn Install', '2026-06-20', 300, 2600, 'project'), hj('c9', 's9a', 'Patio — footers & base', '2026-06-24', 420, 6000, 'project'),
     { id: 'j3', clientId: 'c3', serviceId: 's3a', title: 'Paver base + excavation', date: dstr(3), time: '07:30', duration: 480, amount: 4600, type: 'project' },
     { id: 'j6', clientId: 'c9', serviceId: 's9a', title: 'Patio layout & footers', date: dstr(6), time: '08:00', duration: 360, amount: 3100, type: 'project' },
+    { id: 'j-est1', clientId: 'c7', title: 'Estimate — tree & shrub site visit', date: dstr(2), time: '10:00', duration: 45, amount: 0, type: 'estimate' },
   ],
   expenses: [
     // Recurring overhead (accrues every month from its start date)
