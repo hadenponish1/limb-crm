@@ -5,6 +5,7 @@ import QuoteModal from '../components/QuoteModal'
 import JobModal from '../components/JobModal'
 import { money } from '../lib/format'
 import { quoteRows, weightedPipeline } from '../lib/metrics'
+import { createEstimateSheet, estimatePayload, hasEstimateWebhook, newEstimateId } from '../lib/estimates'
 
 const FILTERS = [
   { id: 'quoted', label: 'Open' },
@@ -29,6 +30,8 @@ export default function Quotes({ clients, timeOff = [], addClient, upsertService
   const [sort, setSort] = useState({ key: 'startDate', dir: 'asc' })
   const [modal, setModal] = useState(null)       // { editing } for QuoteModal
   const [schedule, setSchedule] = useState(null)  // row to schedule a job for
+  const [busyId, setBusyId] = useState(null)     // quote line id currently generating a sheet
+  const [err, setErr] = useState('')
 
   const rows = quoteRows(clients, filter)
   const openPipeline = weightedPipeline(clients)
@@ -46,6 +49,21 @@ export default function Quotes({ clients, timeOff = [], addClient, upsertService
   const setStage = (row, stage) => upsertService(row.clientId, { ...row.line, stage })
   const markWon = (row) => { setStage(row, 'won'); setSchedule({ ...row, line: { ...row.line, stage: 'won' } }) }
   const del = (row) => { if (window.confirm(`Delete this estimate (${row.desc || row.service}) for ${row.name}?`)) removeService(row.clientId, row.id) }
+
+  // Create a Google Sheets estimate from the template (via the n8n webhook),
+  // then save the returned sheet link onto this quote line.
+  const makeSheet = async (row) => {
+    const client = clients.find((c) => c.id === row.clientId)
+    const estimateId = row.line.estimateId || newEstimateId()
+    setBusyId(row.id); setErr('')
+    try {
+      const { url } = await createEstimateSheet(estimatePayload({ estimateId, row, client }))
+      upsertService(row.clientId, { ...row.line, estimateId, sheetUrl: url, sheetCreatedAt: new Date().toISOString() })
+      window.open(url, '_blank', 'noopener')
+    } catch (e) {
+      setErr(e.message || 'Could not create the estimate sheet.')
+    } finally { setBusyId(null) }
+  }
 
   const th = (key, label, align) => (
     <th onClick={() => setSort((s) => ({ key, dir: s.key === key && s.dir === 'asc' ? 'desc' : 'asc' }))}
@@ -69,6 +87,12 @@ export default function Quotes({ clients, timeOff = [], addClient, upsertService
           </div>
           <button className="btn btn-primary" onClick={() => setModal({ editing: null })}><Icon.plus /> New estimate</button>
         </div>
+        {err && (
+          <div style={{ margin: '0 12px 10px', background: '#fdecea', color: '#9a3b2e', border: '1px solid #f2c8c1', borderRadius: 10, padding: '8px 12px', fontSize: 12.5, display: 'flex', justifyContent: 'space-between', gap: 10 }}>
+            <span>{err}</span>
+            <button className="linklike" style={{ color: '#9a3b2e' }} onClick={() => setErr('')}>dismiss</button>
+          </div>
+        )}
         <div style={{ padding: '0 12px 12px', overflowX: 'auto' }}>
           <table className="tbl">
             <thead>
@@ -113,6 +137,15 @@ export default function Quotes({ clients, timeOff = [], addClient, upsertService
                       {r.stage === 'quoted' && <button className="btn btn-sm btn-ghost" onClick={() => setStage(r, 'lost')}>Lost</button>}
                       {r.stage === 'won' && <button className="btn btn-sm btn-primary" onClick={() => setSchedule(r)}>Schedule</button>}
                       {r.stage === 'lost' && <button className="btn btn-sm btn-ghost" onClick={() => setStage(r, 'quoted')}>Reopen</button>}
+                      {r.line.sheetUrl ? (
+                        <a className="icon-btn" title="Open estimate sheet" href={r.line.sheetUrl} target="_blank" rel="noreferrer"><Icon.external style={{ width: 16, height: 16 }} /></a>
+                      ) : (
+                        <button className="icon-btn" disabled={!hasEstimateWebhook() || busyId === r.id}
+                          title={hasEstimateWebhook() ? 'Create a Google Sheets estimate for this client' : 'Set VITE_ESTIMATE_WEBHOOK_URL to enable estimate sheets'}
+                          onClick={() => makeSheet(r)}>
+                          {busyId === r.id ? <span style={{ fontSize: 11, fontWeight: 700 }}>…</span> : <Icon.quote style={{ width: 16, height: 16 }} />}
+                        </button>
+                      )}
                       <button className="icon-btn" title="Edit" onClick={() => setModal({ editing: { clientId: r.clientId, service: r.line } })}><Icon.pencil style={{ width: 16, height: 16 }} /></button>
                       <button className="icon-btn" title="Delete" onClick={() => del(r)}><Icon.trash style={{ width: 16, height: 16 }} /></button>
                     </div>

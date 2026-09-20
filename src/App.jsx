@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useStore } from './lib/store'
 import { supabase } from './lib/supabase'
 import { Icon } from './components/icons'
@@ -42,6 +42,18 @@ export default function App() {
 
   const go = (t, anchor) => { setTab(t); if (anchor) setMetricsAnchor(anchor) }
   const openClient = (id) => { setFocusClient(id); setTab('clients') }
+
+  // Deep link: an estimate sheet (or any external link) can point back to a client
+  // via ?client=<id> — open that client's drawer on load, then tidy the URL.
+  useEffect(() => {
+    try {
+      const cid = new URLSearchParams(window.location.search).get('client')
+      if (cid) {
+        setFocusClient(cid); setTab('clients')
+        window.history.replaceState({}, '', window.location.pathname)
+      }
+    } catch (e) { /* ignore */ }
+  }, [])
 
   return (
     <div className="app">
