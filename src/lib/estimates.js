@@ -29,12 +29,18 @@ export async function createEstimateSheet(payload) {
   return { url, estimateId: data.estimateId || payload.estimateId }
 }
 
-// Build the payload sent to n8n from a quote row + its client.
+// Build the payload sent to n8n from a quote row + its client. Field names line up
+// with the template cells: clientName→C5, address→C6, phone·email→C7, estimateId→C8,
+// date→C9, validUntil→C10, jobName→C11 (on the "Estimate" tab).
 export function estimatePayload({ estimateId, row, client }) {
   const origin = typeof window !== 'undefined' ? window.location.origin : ''
+  const today = new Date()
+  const valid = new Date(today); valid.setDate(valid.getDate() + 30) // "valid until" = 30 days out
+  const iso = (d) => d.toISOString().slice(0, 10)
   return {
     estimateId,
-    date: new Date().toISOString().slice(0, 10),
+    date: iso(today),
+    validUntil: iso(valid),
     clientId: row.clientId,
     clientName: row.name,
     contact: client?.contact || '',
@@ -43,6 +49,7 @@ export function estimatePayload({ estimateId, row, client }) {
     address: row.address || client?.address || '',
     service: row.service || '',
     description: row.desc || '',
+    jobName: row.desc || `${row.service || 'Landscape'} estimate`,
     amount: row.amount || 0,
     // link the sheet back to this client in the CRM
     clientLink: origin ? `${origin}/?client=${row.clientId}` : '',
