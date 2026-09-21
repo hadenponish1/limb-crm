@@ -59,13 +59,33 @@
     },
     {
       "parameters": {
+        "method": "POST",
+        "url": "=https://www.googleapis.com/drive/v3/files/{{ $('Copy template').item.json.id }}/permissions?sendNotificationEmail=false",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleDriveOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { \"role\": \"writer\", \"type\": \"user\", \"emailAddress\": \"REPLACE_WITH_YOUR_GOOGLE_EMAIL\" } }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [660, 0],
+      "id": "e5555555-5555-4555-8555-555555555555",
+      "name": "Share copy",
+      "credentials": {
+        "googleDriveOAuth2Api": { "id": "REPLACE_ME", "name": "Google Drive account" }
+      }
+    },
+    {
+      "parameters": {
         "respondWith": "json",
         "responseBody": "={{ { \"url\": \"https://docs.google.com/spreadsheets/d/\" + $('Copy template').item.json.id + \"/edit\", \"estimateId\": $('Webhook').item.json.body.estimateId } }}",
         "options": {}
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [660, 0],
+      "position": [880, 0],
       "id": "d4444444-4444-4444-8444-444444444444",
       "name": "Respond"
     }
@@ -73,7 +93,8 @@
   "connections": {
     "Webhook": { "main": [[{ "node": "Copy template", "type": "main", "index": 0 }]] },
     "Copy template": { "main": [[{ "node": "Prefill cells", "type": "main", "index": 0 }]] },
-    "Prefill cells": { "main": [[{ "node": "Respond", "type": "main", "index": 0 }]] }
+    "Prefill cells": { "main": [[{ "node": "Share copy", "type": "main", "index": 0 }]] },
+    "Share copy": { "main": [[{ "node": "Respond", "type": "main", "index": 0 }]] }
   },
   "settings": { "executionOrder": "v1" }
 }
