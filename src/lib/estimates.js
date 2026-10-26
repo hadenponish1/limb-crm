@@ -30,26 +30,32 @@ export async function createEstimateSheet(payload) {
 }
 
 // Build the payload sent to n8n from a quote row + its client. Field names line up
-// with the template cells: clientName→C5, address→C6, phone·email→C7, estimateId→C8,
-// date→C9, validUntil→C10, jobName→C11 (on the "Estimate" tab).
+// with the v2 template's "Job Setup" tab: clientName→C6, address→C7, phoneEmail→C8,
+// estimateId→C9, date→C10, jobName→C13, scope→C14. (C11 valid-days stays at the
+// template default and C12 valid-until is a formula, so neither is written.)
 export function estimatePayload({ estimateId, row, client }) {
   const origin = typeof window !== 'undefined' ? window.location.origin : ''
-  const today = new Date()
-  const valid = new Date(today); valid.setDate(valid.getDate() + 30) // "valid until" = 30 days out
-  const iso = (d) => d.toISOString().slice(0, 10)
+  const now = new Date()
+  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+  const address = row.address || client?.address || ''
+  const street = address.split(',')[0].trim()
+  const phone = client?.phone || ''
+  const email = client?.email || ''
   return {
     estimateId,
-    date: iso(today),
-    validUntil: iso(valid),
+    date: today,
     clientId: row.clientId,
     clientName: row.name,
     contact: client?.contact || '',
-    email: client?.email || '',
-    phone: client?.phone || '',
-    address: row.address || client?.address || '',
+    email,
+    phone,
+    phoneEmail: [phone, email].filter(Boolean).join(' · '),
+    address,
     service: row.service || '',
     description: row.desc || '',
-    jobName: row.desc || `${row.service || 'Landscape'} estimate`,
+    // e.g. "13631 Trilithon Rd - Mulch & Beds Estimate"
+    jobName: [street, `${row.service || 'Landscape'} Estimate`].filter(Boolean).join(' - '),
+    scope: row.desc || '',
     amount: row.amount || 0,
     // link the sheet back to this client in the CRM
     clientLink: origin ? `${origin}/?client=${row.clientId}` : '',

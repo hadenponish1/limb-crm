@@ -20,7 +20,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "https://www.googleapis.com/drive/v3/files/1k87yAT_xsNHRgYZKFX3nEW1SqaeR3kX9m9t1vZmD-T8/copy",
+        "url": "https://www.googleapis.com/drive/v3/files/1bHKmYvOCBf6YiX3jIwvj9TnluXt5XWg0BsOcVWDxcbg/copy",
         "authentication": "predefinedCredentialType",
         "nodeCredentialType": "googleDriveOAuth2Api",
         "sendBody": true,
@@ -45,7 +45,7 @@
         "nodeCredentialType": "googleSheetsOAuth2Api",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ { \"valueInputOption\": \"USER_ENTERED\", \"data\": [ { \"range\": \"Estimate!C5\", \"values\": [[ $('Webhook').item.json.body.clientName ]] }, { \"range\": \"Estimate!C6\", \"values\": [[ $('Webhook').item.json.body.address ]] }, { \"range\": \"Estimate!C7\", \"values\": [[ ($('Webhook').item.json.body.phone || '') + ' · ' + ($('Webhook').item.json.body.email || '') ]] }, { \"range\": \"Estimate!C8\", \"values\": [[ $('Webhook').item.json.body.estimateId ]] }, { \"range\": \"Estimate!C9\", \"values\": [[ $('Webhook').item.json.body.date ]] }, { \"range\": \"Estimate!C10\", \"values\": [[ $('Webhook').item.json.body.validUntil ]] }, { \"range\": \"Estimate!C11\", \"values\": [[ $('Webhook').item.json.body.jobName ]] } ] } }}",
+        "jsonBody": "={{ { \"valueInputOption\": \"USER_ENTERED\", \"data\": [ { \"range\": \"'Job Setup'!C6\", \"values\": [[ $('Webhook').item.json.body.clientName ]] }, { \"range\": \"'Job Setup'!C7\", \"values\": [[ $('Webhook').item.json.body.address ]] }, { \"range\": \"'Job Setup'!C8\", \"values\": [[ $('Webhook').item.json.body.phoneEmail ]] }, { \"range\": \"'Job Setup'!C9\", \"values\": [[ $('Webhook').item.json.body.estimateId ]] }, { \"range\": \"'Job Setup'!C10\", \"values\": [[ $('Webhook').item.json.body.date ]] }, { \"range\": \"'Job Setup'!C13\", \"values\": [[ $('Webhook').item.json.body.jobName ]] }, { \"range\": \"'Job Setup'!C14\", \"values\": [[ $('Webhook').item.json.body.scope ]] } ] } }}",
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
